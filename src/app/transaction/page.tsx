@@ -344,7 +344,7 @@ const Transaction = () => {
               href={`/download-invoice?transactionId=${transactionId}&jobCardId=${
                 currentTransaction?.data?.jobCards?.find(
                   (jobCard) => jobCard.status === "unpaid"
-                )._id
+                )?._id
               }`}
             >
               <Button bg="green.300">Generate Invoice</Button>
@@ -454,7 +454,7 @@ const Transaction = () => {
               href={`/download-job-card?jobCardId=${
                 currentTransaction?.data?.jobCards?.find(
                   (jobCard) => jobCard.status === "unpaid"
-                )._id
+                )?._id
               }&transactionId=${transactionId}`}
             >
               <Button bg="green.300" ml="3">
