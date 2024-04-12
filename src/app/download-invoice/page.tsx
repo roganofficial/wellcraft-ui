@@ -20,12 +20,12 @@ import {
   Th,
   Thead,
   Tr,
+  Image,
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
-import Image from "next/image";
 import { toast } from "react-toastify";
 
 const DownloadInvoice = () => {
@@ -401,10 +401,10 @@ const DownloadInvoice = () => {
                     position="relative"
                   >
                     <Image
-                      width={300}
-                      height={100}
                       src={`${process.env.NEXT_PUBLIC_BASE_URL}${card.image}`}
-                      alt="image"
+                      width="300px"
+                      height="100px"
+                      alt={`${card.image}`}
                     />
                     <Text position="absolute" bottom="3">
                       {card?.description}
