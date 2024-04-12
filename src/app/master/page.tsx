@@ -192,7 +192,11 @@ const MasterPanel = () => {
                         background="grey.100"
                         onClick={() =>
                           addInfo(
-                            { name: customerName, phone: customerPhone },
+                            {
+                              name: customerName,
+                              phone: customerPhone,
+                              _id: `${customerName}${customerPhone}${Date.now()}`,
+                            },
                             setCustomerInfo
                           )
                         }
@@ -265,7 +269,11 @@ const MasterPanel = () => {
                         background="grey.100"
                         onClick={() =>
                           addInfo(
-                            { name: contractorName, phone: contractorPhone },
+                            {
+                              name: contractorName,
+                              phone: contractorPhone,
+                              _id: `${contractorName}${contractorPhone}${Date.now()}`,
+                            },
                             setContractorInfo
                           )
                         }
