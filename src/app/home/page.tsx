@@ -54,7 +54,6 @@ const Home = () => {
                 borderColor="grey.100"
                 borderWidth="1px"
                 position="relative"
-                borderColor="navy"
               >
                 <Flex justifyContent="space-between" mb="5">
                   <Badge p="1" px="3" borderRadius="lg">

@@ -134,6 +134,7 @@ const DownloadInvoice = () => {
   useEffect(() => {
     fetchFirstMaster();
     console.log(jobCards);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
