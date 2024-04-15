@@ -1,5 +1,5 @@
 "use client";
-import { Badge, Box, Flex, Heading, Text } from "@chakra-ui/react";
+import { Badge, Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
@@ -43,6 +43,15 @@ const Home = () => {
   return (
     <Box p="10">
       <Heading ml="10">Transactions 📃</Heading>
+      <Flex w="full" justifyContent="flex-end">
+        <Button
+          bg="blue.300"
+          color="white"
+          onClick={() => (window.location.href = "/transaction")}
+        >
+          Create Transaction
+        </Button>
+      </Flex>
       <Table variant="simple" mt="5">
         <Thead>
           <Tr>

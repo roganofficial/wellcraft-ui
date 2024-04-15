@@ -20,8 +20,9 @@ import {
   Th,
   Thead,
   Tr,
-  Image,
+  Image as ChakraImage,
 } from "@chakra-ui/react";
+import Image from "next/image";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -58,9 +59,16 @@ const Invoice = forwardRef(
     useEffect(() => {
       if (invoiceData) {
         setUnitPrice(invoiceData?.[0]?.unitPrice);
+      } else {
+        console.log("indata", costType);
+        if (costType === "size") {
+          setUnitPrice(new Array(100).fill(masterData?.pricePerSqFeet));
+        } else {
+          setUnitPrice(new Array(100).fill(masterData?.pricePerHour));
+        }
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [invoiceData]);
+    }, [invoiceData, costType, masterData]);
 
     if (isLoadingInvoiceData) return <></>;
 
@@ -177,9 +185,7 @@ const Invoice = forwardRef(
                     costType === "size"
                       ? getTotalMeasurment(jobCardEntry)
                       : getTotalQuantity();
-                  const amount = (quantity * unitPrice?.[index] ?? 0).toFixed(
-                    2
-                  );
+                  const amount = (quantity * unitPrice?.[index]).toFixed(2);
                   return (
                     <Tr key={index}>
                       <Td
@@ -187,7 +193,7 @@ const Invoice = forwardRef(
                         px="0"
                         textAlign="center"
                       >
-                        {index}
+                        {index + 1}
                       </Td>
                       <Td borderRight="1px maroon solid" pr="1">
                         {jobCardEntry.description}
@@ -246,7 +252,7 @@ const Invoice = forwardRef(
                 </Tr>
               ))}
               <Tr borderRight="1px maroon solid">
-                <Td borderRight="1px maroon solid" colSpan={3} rowSpan={5}>
+                <Td borderRight="1px maroon solid" colSpan={4} rowSpan={5}>
                   <Flex justifyContent="flex-start"></Flex>
                 </Td>
                 <Td
@@ -261,10 +267,8 @@ const Invoice = forwardRef(
               <Tr>
                 <Td borderRight="1px maroon solid"></Td>
                 <Td borderRight="1px maroon solid"></Td>
-                <Td borderRight="1px maroon solid"></Td>
               </Tr>
               <Tr>
-                <Td borderRight="1px maroon solid"></Td>
                 <Td borderRight="1px maroon solid"></Td>
                 <Td borderRight="1px maroon solid"></Td>
               </Tr>
@@ -273,7 +277,6 @@ const Invoice = forwardRef(
                   Grand Total
                 </Td>
                 <Td borderRight="1px maroon solid">₹{getTotalAmount()}</Td>
-                <Td borderRight="1px maroon solid"></Td>
               </Tr>
             </Tbody>
           </Table>
@@ -328,7 +331,7 @@ const Invoice = forwardRef(
                     border="1px solid black"
                     position="relative"
                   >
-                    <Image
+                    <ChakraImage
                       src={`${process.env.NEXT_PUBLIC_BASE_URL}${card.image}`}
                       width={300}
                       style={{
@@ -368,7 +371,6 @@ const DownloadInvoice = () => {
       .get(`${process.env.NEXT_PUBLIC_BASE_URL}master`)
       .then((res) => {
         const masterData = res.data;
-        console.log(masterData);
         setMasterData(res.data);
       });
   };
@@ -412,7 +414,6 @@ const DownloadInvoice = () => {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}transaction/one?transactionId=${transactionId}`
       );
-      console.log(response);
       return response;
     } catch (error) {
       console.error(error);
@@ -442,14 +443,11 @@ const DownloadInvoice = () => {
     queryFn: getJobCards,
   });
 
-  console.log("jobcard", jobCards);
-
   const fetchJobCard = async () => {
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}jobCards/one?jobCardId=${jobCardId}`
       );
-      console.log(response.data);
       return response;
     } catch (error) {
       console.error(error);
@@ -469,7 +467,6 @@ const DownloadInvoice = () => {
 
   useEffect(() => {
     fetchFirstMaster();
-    console.log(jobCards);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -517,7 +514,7 @@ const DownloadInvoice = () => {
           costType === "size"
             ? getTotalMeasurment(jobCardEntry)
             : getTotalQuantity();
-        const amount = quantity * unitPrice[index];
+        const amount = quantity * unitPrice?.[index];
         return amount;
       })
       ?.reduce((a, b) => a + b, 0)
