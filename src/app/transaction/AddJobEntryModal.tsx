@@ -25,6 +25,9 @@ const AddJobEntryModal = ({
   onClose,
   transactionId,
   refetchTransactions,
+  entryModalData,
+  deleteJobCardEntry,
+  currentTransaction,
 }: {
   masterData: any;
   onClose: () => void;
@@ -45,6 +48,14 @@ const AddJobEntryModal = ({
   const [image, setImage] = useState();
 
   const addJobCard = async () => {
+    if (entryModalData) {
+      deleteJobCardEntry(
+        currentTransaction?.data?.jobCards?.find(
+          (jobCard) => jobCard.status === "unpaid"
+        )._id,
+        entryModalData._id
+      );
+    }
     const formData = new FormData();
     formData.append(
       "description",
@@ -100,7 +111,29 @@ const AddJobEntryModal = ({
     }
   }
 
-  useEffect(() => console.log(image), [image]);
+  useEffect(() => {
+    if (entryModalData) {
+      const description = entryModalData.description.split("in");
+      const typeOfWork = description[0];
+      const remainText = description[1]
+        .split(" ")
+        .filter((e) => !!e)
+        .map((e) => e.trim());
+      const materialThickness = remainText[0];
+      const materialName = remainText[remainText.length - 1];
+      setTypeOfWork(typeOfWork.trim());
+      setMaterialThickness(materialThickness.trim());
+      setMaterialName(materialName);
+      setHeight(entryModalData.height);
+      setWidth(entryModalData.width);
+      setSizeUnit(entryModalData.sizeUnit);
+      setQuantity(entryModalData.quantity);
+      setMachineNumber(entryModalData.machineNumber);
+      setTimeOfWork(entryModalData.timeOfWork);
+      setRemark(entryModalData.remark);
+      setImage(entryModalData.image);
+    }
+  }, [entryModalData]);
 
   return (
     <>
@@ -240,7 +273,11 @@ const AddJobEntryModal = ({
               <Image
                 width={240}
                 height={135}
-                src={URL.createObjectURL(image)}
+                src={
+                  typeof image === "string"
+                    ? `${process.env.NEXT_PUBLIC_BASE_URL}${image}`
+                    : URL.createObjectURL(image)
+                }
                 alt="upload-image"
                 onClick={() => setImage(null)}
               />

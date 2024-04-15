@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Table, Tbody, Td, Th, Thead, Image, Tr } from "@chakra-ui/react";
+import { Delete, Edit } from "@mui/icons-material";
 
 const Home = () => {
   const [masterData, setMasterData] = useState(null);
@@ -41,72 +43,67 @@ const Home = () => {
   return (
     <Box p="10">
       <Heading ml="10">Transactions 📃</Heading>
-      <Flex flexWrap="wrap">
-        {transactions?.data.map((invoice) => (
-          <Box ml="5" mt="10" key={invoice._id}>
-            <Link href={`/transaction?transactionId=${invoice._id}`}>
-              <Box
-                w="80"
-                h="48"
-                borderRadius="lg"
-                shadow="md"
-                p="10"
-                borderColor="grey.100"
-                borderWidth="1px"
-                position="relative"
-              >
-                <Flex justifyContent="space-between" mb="5">
-                  <Badge p="1" px="3" borderRadius="lg">
-                    {new Date(invoice.createdAt).toDateString()}
-                  </Badge>
-                </Flex>
+      <Table variant="simple" mt="5">
+        <Thead>
+          <Tr>
+            <Th borderWidth="1px" borderColor="gray.200" w="10">
+              Sr. no.
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200">
+              Customer Name
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200">
+              Contractor Name
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200">
+              Date Created
+            </Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {transactions?.data.map((invoice, index) => (
+            <Tr
+              key={index}
+              onClick={() =>
+                (window.location.href = `/transaction?transactionId=${invoice._id}`)
+              }
+              _hover={{
+                shadow: "md",
+                cursor: "pointer",
+                background: "skyblue",
+              }}
+              bg={index % 2 === 0 ? "gray.300" : "white"}
+              transition="ease-in-out 0.3s "
+            >
+              <Td borderWidth="1px" borderColor="gray.200">
+                <Text textAlign="center">{index + 1}</Text>
+              </Td>
+              <Td borderWidth="1px" borderColor="gray.200" maxW="32">
+                {
+                  masterData?.customerInfo?.find(
+                    (info) => info._id === invoice.customerInfoId
+                  )?.name
+                }
+              </Td>
+              <Td borderWidth="1px" borderColor="gray.200">
                 <Text>
-                  Customer :{" "}
-                  <Box as="span" fontWeight="semibold">
-                    {
-                      masterData?.customerInfo?.find(
-                        (info) => info._id === invoice.customerInfoId
-                      )?.name
-                    }
-                  </Box>
+                  {" "}
+                  {
+                    masterData?.contractorInfo?.find(
+                      (info) => info._id === invoice.contractorInfoId
+                    )?.name
+                  }
                 </Text>
-                <Text mt="5">
-                  Contractor :{" "}
-                  <Box as="span" fontWeight="semibold">
-                    {
-                      masterData?.contractorInfo?.find(
-                        (info) => info._id === invoice.contractorInfoId
-                      )?.name
-                    }
-                  </Box>
-                </Text>
-              </Box>
-            </Link>
-          </Box>
-        ))}
-        <Link href={`/transaction`}>
-          <Box
-            w="80"
-            h="48"
-            borderRadius="lg"
-            shadow="md"
-            p="10"
-            position="relative"
-            borderColor="navy"
-            mt="10"
-            ml="5"
-            bg="skyblue"
-            textAlign="center"
-          >
-            <Text color="white" fontSize="32px" fontWeight="bold">
-              +
-            </Text>
-            <Text color="white" fontSize="22px" fontWeight="semibold">
-              Start new transaction
-            </Text>
-          </Box>
-        </Link>
-      </Flex>
+              </Td>
+              <Td borderWidth="1px" borderColor="gray.200">
+                <Badge p="1" px="3" borderRadius="lg">
+                  {new Date(invoice.createdAt).toDateString()}
+                </Badge>
+              </Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
     </Box>
   );
 };

@@ -22,185 +22,50 @@ import {
   Tr,
   Image,
 } from "@chakra-ui/react";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import { toast } from "react-toastify";
 
-const DownloadInvoice = () => {
-  const searchParams = useSearchParams();
-
-  const transactionId = searchParams.get("transactionId");
-  const jobCardId = searchParams.get("jobCardId");
-  //   const costType = searchParams.get("costType") ?? "size";
-  const componentRef = useRef(null);
-  const [costType, setCostType] = useState("size");
-  const [masterData, setMasterData] = useState(null);
-  const [unitPrice, setUnitPrice] = useState();
-
-  const fetchFirstMaster = () => {
-    return axios
-      .get(`${process.env.NEXT_PUBLIC_BASE_URL}master`)
-      .then((res) => {
-        const masterData = res.data;
-        console.log(masterData);
-        setMasterData(res.data);
-      });
-  };
-
-  const downloadPDF = async () => {
-    generateInvoice();
-    const canvas = await html2canvas(componentRef.current);
-    const imgData = canvas.toDataURL("image/png");
-    const numOfImgPages = Math.ceil(jobCards?.data?.length / 4);
-    const pdf = new jsPDF();
-    pdf.addImage(imgData, "PNG", 0, 0);
-    Array.from({ length: numOfImgPages }).forEach(async (_, pageNum) => {
-      const imageCanvas = await html2canvas(
-        document.getElementById(`image-cont-${pageNum}`)
-      );
-      const imgScreenShotData = imageCanvas.toDataURL("image/png");
-      pdf.addPage();
-      pdf.addImage(imgScreenShotData, "PNG", 0, 0);
-
-      if (pageNum === numOfImgPages - 1) {
-        const pdfName = new Date(Date.now()).toDateString();
-        pdf.save(
-          `${
-            masterData?.customerInfo?.find(
-              (info) => info._id === transaction?.data?.customerInfoId
-            )?.name
-          }-${pdfName}.pdf`
-        );
-      }
-    });
-  };
-
-  async function fetchTransaction() {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}transaction/one?transactionId=${transactionId}`
-      );
-      console.log(response);
-      return response;
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  const { data: transaction, isLoading } = useQuery({
-    queryKey: ["fetch-transaction"],
-    queryFn: fetchTransaction,
-  });
-
-  async function getJobCards() {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}jobCards?transactionId=${transactionId}`
-      );
-      return response;
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  const {
-    data: jobCards,
-    isLoading: isLoadingJobCard,
-    refetch: refetchJobCards,
-  } = useQuery({
-    queryKey: ["jobCards"],
-    queryFn: getJobCards,
-  });
-
-  const fetchJobCard = async () => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BASE_URL}jobCards/one?jobCardId=${jobCardId}`
-      );
-      console.log(response.data);
-      return response;
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const { data: currentJobCard, isLoading: isCurrentJobCardLoading } = useQuery(
+const Invoice = forwardRef(
+  (
     {
-      queryKey: ["fetch-job-card"],
-      queryFn: fetchJobCard,
-    }
-  );
-
-  useEffect(() => {
-    fetchFirstMaster();
-    console.log(jobCards);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (costType === "size") {
-      setUnitPrice(masterData?.pricePerSqFeet);
-    } else {
-      setUnitPrice(masterData?.pricePerHour);
-    }
-  }, [costType, masterData]);
-
-  if (isLoading || isLoadingJobCard || isCurrentJobCardLoading) return <></>;
-
-  const getTotalQuantity = () => {
-    let result = 0;
-    currentJobCard?.data?.jobCardEntries?.forEach((data) => {
-      result += Number(data.quantity);
+      jobCardId,
+      masterData,
+      transaction,
+      currentJobCard,
+      costType,
+      getTotalMeasurment,
+      getTotalQuantity,
+      unitPrice,
+      setUnitPrice,
+      getTotalAmount,
+    },
+    ref
+  ) => {
+    const fetchInvoiceByJobCardId = async () => {
+      const result = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}transaction/invoice?jobCardId=${jobCardId}`
+      );
+      return result.data;
+    };
+    const { data: invoiceData, isLoading: isLoadingInvoiceData } = useQuery({
+      queryKey: ["fetch-invoice"],
+      queryFn: fetchInvoiceByJobCardId,
     });
-    return result;
-  };
 
-  const getTotalMeasurment = () => {
-    let result = 0;
-    currentJobCard?.data?.jobCardEntries?.forEach((data) => {
-      const totalArea =
-        Number(data.height) * Number(data.width) * Number(data.quantity);
-      const sqFeetArea = totalArea / (data.sizeUnit === "mm" ? 92900 : 144);
-      result += sqFeetArea;
-    });
-    return result.toFixed(2);
-  };
+    useEffect(() => {
+      if (invoiceData) {
+        setUnitPrice(invoiceData?.[0]?.unitPrice);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [invoiceData]);
 
-  const totalTimeOfWork =
-    jobCards?.data
-      ?.map((e) => Number(e.timeOfWork))
-      .reduce((a, b) => a + b, 0) / 60;
+    if (isLoadingInvoiceData) return <></>;
 
-  const amount = (
-    costType === "size"
-      ? getTotalMeasurment() * unitPrice
-      : (totalTimeOfWork * unitPrice).toFixed(2)
-  ).toLocaleString();
-
-  const generateInvoice = () => {
-    return axios
-      .post(
-        `${process.env.NEXT_PUBLIC_BASE_URL}transaction/invoice/new?transactionId=${transactionId}`,
-        {
-          costType,
-          unitPrice,
-        }
-      )
-      .then(() => toast("Invoice saved successfully", { type: "success" }))
-      .catch((err) => toast("Failed to save invoice", { type: "error" }));
-  };
-
-  console.log(currentJobCard);
-
-  const Invoice = () => {
     return (
-      <Box
-        borderWidth="1px"
-        borderColor="black"
-        p="5"
-        ref={componentRef}
-        maxW="640px"
-      >
+      <Box borderWidth="1px" borderColor="black" p="5" ref={ref} maxW="740px">
         <Flex justifyContent="space-between">
           <Image
             src={require("../../../public/logo.png")}
@@ -267,6 +132,18 @@ const DownloadInvoice = () => {
                 }
               </Box>
             </Text>
+            <Text mt="2" fontSize="16">
+              <Box as="span" fontWeight="semibold" mr="0">
+                C/O :
+              </Box>
+              <Box as="span" ml="3" textDecoration="underline" minW="48">
+                {
+                  masterData?.contractorInfo?.find(
+                    (info) => info._id === transaction?.data?.contractorInfoId
+                  )?.name
+                }
+              </Box>
+            </Text>
           </Box>
         </Flex>
         <TableContainer mt="5">
@@ -280,6 +157,9 @@ const DownloadInvoice = () => {
                   Description
                 </Th>
                 <Th color="white" px="0" textAlign="center">
+                  Size
+                </Th>
+                <Th color="white" px="0" textAlign="center">
                   Qty
                 </Th>
                 <Th color="white" px="0" textAlign="center">
@@ -291,33 +171,73 @@ const DownloadInvoice = () => {
               </Tr>
             </Thead>
             <Tbody borderLeft="1px maroon solid">
-              <Tr>
-                <Td borderRight="1px maroon solid" px="0" textAlign="center">
-                  1
-                </Td>
-                <Td borderRight="1px maroon solid" pr="0">
-                  <ul>
-                    {currentJobCard?.data.jobCardEntries?.map(
-                      (jobCard, index) => (
-                        <li key={index}>{jobCard.description}</li>
-                      )
-                    )}
-                  </ul>
-                </Td>
-                <Td borderRight="1px maroon solid" px="2">
-                  {costType === "size"
-                    ? getTotalMeasurment()
-                    : getTotalQuantity()}
-                </Td>
-                <Td borderRight="1px maroon solid" px="2" textAlign="center">
-                  ₹{unitPrice}
-                </Td>
-                <Td borderRight="1px maroon solid" px="2" textAlign="center">
-                  ₹{amount}
-                </Td>
-              </Tr>
-              {Array.from({ length: 5 }).map((_, index) => (
+              {currentJobCard?.data.jobCardEntries?.map(
+                (jobCardEntry, index) => {
+                  const quantity =
+                    costType === "size"
+                      ? getTotalMeasurment(jobCardEntry)
+                      : getTotalQuantity();
+                  const amount = (quantity * unitPrice?.[index] ?? 0).toFixed(
+                    2
+                  );
+                  return (
+                    <Tr key={index}>
+                      <Td
+                        borderRight="1px maroon solid"
+                        px="0"
+                        textAlign="center"
+                      >
+                        {index}
+                      </Td>
+                      <Td borderRight="1px maroon solid" pr="1">
+                        {jobCardEntry.description}
+                      </Td>
+                      <Td borderRight="1px maroon solid" px="1">
+                        {jobCardEntry?.width} x {jobCardEntry?.height}{" "}
+                        {jobCardEntry?.sizeUnit}
+                      </Td>
+                      <Td
+                        borderRight="1px maroon solid"
+                        px="0"
+                        textAlign="center"
+                      >
+                        {quantity}
+                      </Td>
+                      <Td
+                        borderRight="1px maroon solid"
+                        p="0"
+                        textAlign="center"
+                      >
+                        <Input
+                          type="number"
+                          value={unitPrice?.[index]}
+                          onChange={(e) =>
+                            setUnitPrice([
+                              ...unitPrice.slice(0, index),
+                              e.target.value,
+                              ...unitPrice.slice(index + 1),
+                            ])
+                          }
+                          border="none"
+                          w="20"
+                        />
+                      </Td>
+                      <Td
+                        borderRight="1px maroon solid"
+                        px="2"
+                        textAlign="center"
+                      >
+                        ₹{amount}
+                      </Td>
+                    </Tr>
+                  );
+                }
+              )}
+              {Array.from({
+                length: 11 - currentJobCard?.data.jobCardEntries?.length,
+              }).map((_, index) => (
                 <Tr key={index}>
+                  <Td borderRight="1px maroon solid"></Td>
                   <Td borderRight="1px maroon solid"></Td>
                   <Td borderRight="1px maroon solid"></Td>
                   <Td borderRight="1px maroon solid"></Td>
@@ -329,24 +249,31 @@ const DownloadInvoice = () => {
                 <Td borderRight="1px maroon solid" colSpan={3} rowSpan={5}>
                   <Flex justifyContent="flex-start"></Flex>
                 </Td>
-                <Td borderRight="1px maroon solid" fontWeight="semibold">
+                <Td
+                  borderRight="1px maroon solid"
+                  fontWeight="semibold"
+                  textAlign="center"
+                >
                   Total
                 </Td>
-                <Td>₹{amount}</Td>
+                <Td borderRight="1px maroon solid">₹{getTotalAmount()}</Td>
               </Tr>
               <Tr>
                 <Td borderRight="1px maroon solid"></Td>
                 <Td borderRight="1px maroon solid"></Td>
+                <Td borderRight="1px maroon solid"></Td>
               </Tr>
               <Tr>
                 <Td borderRight="1px maroon solid"></Td>
                 <Td borderRight="1px maroon solid"></Td>
+                <Td borderRight="1px maroon solid"></Td>
               </Tr>
               <Tr>
-                <Td borderRight="1px maroon solid" fontWeight="semibold">
+                <Td borderRight="1px maroon solid" fontWeight="semibold" px="0">
                   Grand Total
                 </Td>
-                <Td borderRight="1px maroon solid">₹{amount}</Td>
+                <Td borderRight="1px maroon solid">₹{getTotalAmount()}</Td>
+                <Td borderRight="1px maroon solid"></Td>
               </Tr>
             </Tbody>
           </Table>
@@ -376,13 +303,14 @@ const DownloadInvoice = () => {
             </Text>
           </Flex>
         </TableContainer>
+        <div id="my_mm" style={{ height: "100mm", display: "none" }}></div>
         <>
           {Array.from({
             length: Math.ceil(currentJobCard?.data?.jobCardEntries?.length / 4),
           }).map((_, idx) => (
             <Flex
-              w="640px"
-              minH="905px"
+              w="740px"
+              minH="1018px"
               mt="5"
               flexWrap="wrap"
               id={`image-cont-${idx}`}
@@ -393,8 +321,8 @@ const DownloadInvoice = () => {
                 return (
                   <Flex
                     key={index}
-                    minW="300px"
-                    height="452px"
+                    minW="340px"
+                    height="509px"
                     justifyContent="center"
                     alignItems="center"
                     border="1px solid black"
@@ -402,8 +330,10 @@ const DownloadInvoice = () => {
                   >
                     <Image
                       src={`${process.env.NEXT_PUBLIC_BASE_URL}${card.image}`}
-                      width="300px"
-                      height="100px"
+                      width={300}
+                      style={{
+                        height: "auto",
+                      }}
                       alt={`${card.image}`}
                     />
                     <Text position="absolute" bottom="3">
@@ -417,6 +347,194 @@ const DownloadInvoice = () => {
         </>
       </Box>
     );
+  }
+);
+
+Invoice.displayName = "Invoice";
+
+const DownloadInvoice = () => {
+  const searchParams = useSearchParams();
+
+  const transactionId = searchParams.get("transactionId");
+  const jobCardId = searchParams.get("jobCardId");
+  //   const costType = searchParams.get("costType") ?? "size";
+  const componentRef = useRef(null);
+  const [costType, setCostType] = useState("size");
+  const [masterData, setMasterData] = useState(null);
+  const [unitPrice, setUnitPrice] = useState(new Array(100).fill(0));
+
+  const fetchFirstMaster = () => {
+    return axios
+      .get(`${process.env.NEXT_PUBLIC_BASE_URL}master`)
+      .then((res) => {
+        const masterData = res.data;
+        console.log(masterData);
+        setMasterData(res.data);
+      });
+  };
+
+  const downloadPDF = async () => {
+    generateInvoice();
+    const canvas = await html2canvas(componentRef.current, {
+      height: 1920,
+      width: 1080,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const numOfImgPages = Math.ceil(
+      currentJobCard?.data?.jobCardEntries?.length / 4
+    );
+    const pdf = new jsPDF();
+    pdf.addImage(imgData, "PNG", 0, 0);
+    Array.from({ length: numOfImgPages }).forEach(async (_, pageNum) => {
+      const imageCanvas = await html2canvas(
+        document.getElementById(`image-cont-${pageNum}`)
+      );
+      const imgScreenShotData = imageCanvas.toDataURL("image/png");
+      pdf.addPage();
+      pdf.addImage(imgScreenShotData, "PNG", 0, 0);
+
+      if (pageNum === numOfImgPages - 1) {
+        const pdfName = new Date(Date.now()).toDateString();
+        pdf.save(
+          `${
+            masterData?.customerInfo?.find(
+              (info) => info._id === transaction?.data?.customerInfoId
+            )?.name
+          }-${pdfName}.pdf`
+        );
+      }
+    });
+  };
+
+  async function fetchTransaction() {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}transaction/one?transactionId=${transactionId}`
+      );
+      console.log(response);
+      return response;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  const { data: transaction, isLoading } = useQuery({
+    queryKey: ["fetch-transaction"],
+    queryFn: fetchTransaction,
+  });
+
+  async function getJobCards() {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}jobCards?transactionId=${transactionId}`
+      );
+      return response;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  const {
+    data: jobCards,
+    isLoading: isLoadingJobCard,
+    refetch: refetchJobCards,
+  } = useQuery({
+    queryKey: ["jobCards"],
+    queryFn: getJobCards,
+  });
+
+  console.log("jobcard", jobCards);
+
+  const fetchJobCard = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}jobCards/one?jobCardId=${jobCardId}`
+      );
+      console.log(response.data);
+      return response;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const { data: currentJobCard, isLoading: isCurrentJobCardLoading } = useQuery(
+    {
+      queryKey: ["fetch-job-card"],
+      queryFn: fetchJobCard,
+    }
+  );
+
+  // const generateInvoiceId = () =>{
+  //   return `${lastInvoiceNo}${new Date().getMonth().toFixed(2)}${new Date().getFullYear()}`
+  // }
+
+  useEffect(() => {
+    fetchFirstMaster();
+    console.log(jobCards);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (costType === "size") {
+      setUnitPrice(new Array(100).fill(masterData?.pricePerSqFeet));
+    } else {
+      setUnitPrice(new Array(100).fill(masterData?.pricePerHour));
+    }
+  }, [costType, masterData]);
+
+  if (isLoading || isLoadingJobCard || isCurrentJobCardLoading) return <></>;
+
+  const getTotalQuantity = () => {
+    let result = 0;
+    currentJobCard?.data?.jobCardEntries?.forEach((data) => {
+      result += Number(data.quantity);
+    });
+    return result;
+  };
+
+  const getTotalMeasurment = (data) => {
+    let result = 0;
+    const totalArea =
+      Number(data?.height) * Number(data?.width) * Number(data?.quantity);
+    const sqFeetArea = totalArea / (data?.sizeUnit === "mm" ? 92900 : 144);
+    result += sqFeetArea;
+    return result.toFixed(2);
+  };
+
+  const totalTimeOfWork =
+    jobCards?.data
+      ?.map((e) => Number(e.timeOfWork))
+      .reduce((a, b) => a + b, 0) / 60;
+
+  // const amount = (
+  //   costType === "size"
+  //     ? getTotalMeasurment() * unitPrice
+  //     : (totalTimeOfWork * unitPrice).toFixed(2)
+  // ).toLocaleString();
+  const getTotalAmount = () => {
+    return currentJobCard?.data?.jobCardEntries
+      ?.map((jobCardEntry, index) => {
+        const quantity =
+          costType === "size"
+            ? getTotalMeasurment(jobCardEntry)
+            : getTotalQuantity();
+        const amount = quantity * unitPrice[index];
+        return amount;
+      })
+      ?.reduce((a, b) => a + b, 0)
+      .toFixed(2);
+  };
+
+  const generateInvoice = () => {
+    return axios
+      .post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}transaction/invoice/new?transactionId=${transactionId}&jobCardId=${jobCardId}`,
+        {
+          costType,
+          unitPrice,
+        }
+      )
+      .then(() => toast("Invoice saved successfully", { type: "success" }))
+      .catch((err) => toast("Failed to save invoice", { type: "error" }));
   };
 
   return (
@@ -448,7 +566,7 @@ const DownloadInvoice = () => {
             <option value="time">Time of work</option>
           </Select>
         </Flex>
-        <Flex alignItems="center" bg="blue.300" p="2" borderRadius="md">
+        {/* <Flex alignItems="center" bg="blue.300" p="2" borderRadius="md">
           <Text w="36">Unit Price:</Text>
           <InputGroup>
             <Input
@@ -463,12 +581,24 @@ const DownloadInvoice = () => {
               </Text>
             </InputRightElement>
           </InputGroup>
-        </Flex>
+        </Flex> */}
         <Button bg="green.300" onClick={downloadPDF}>
           Download Invoice
         </Button>
       </Flex>
-      <Invoice />
+      <Invoice
+        ref={componentRef}
+        jobCardId={jobCardId}
+        masterData={masterData}
+        transaction={transaction}
+        currentJobCard={currentJobCard}
+        costType={costType}
+        getTotalMeasurment={getTotalMeasurment}
+        getTotalQuantity={getTotalQuantity}
+        unitPrice={unitPrice}
+        setUnitPrice={setUnitPrice}
+        getTotalAmount={getTotalAmount}
+      />
     </Box>
   );
 };
