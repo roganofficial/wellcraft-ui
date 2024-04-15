@@ -56,24 +56,10 @@ const Invoice = forwardRef(
       queryFn: fetchInvoiceByJobCardId,
     });
 
-    useEffect(() => {
-      if (invoiceData) {
-        setUnitPrice(invoiceData?.[0]?.unitPrice);
-      } else {
-        console.log("indata", costType);
-        if (costType === "size") {
-          setUnitPrice(new Array(100).fill(masterData?.pricePerSqFeet));
-        } else {
-          setUnitPrice(new Array(100).fill(masterData?.pricePerHour));
-        }
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [invoiceData, costType, masterData]);
-
     if (isLoadingInvoiceData) return <></>;
 
     return (
-      <Box borderWidth="1px" borderColor="black" p="5" ref={ref} maxW="740px">
+      <Box borderWidth="1px" borderColor="black" p="5" ref={ref} maxW="780px">
         <Flex justifyContent="space-between">
           <Image
             src={require("../../../public/logo.png")}
@@ -155,7 +141,7 @@ const Invoice = forwardRef(
           </Box>
         </Flex>
         <TableContainer mt="5">
-          <Table variant="simple">
+          <Table variant="simple" border="1px maroon solid">
             <Thead bg="maroon">
               <Tr>
                 <Th color="white" px="0" pl="1">
@@ -170,6 +156,11 @@ const Invoice = forwardRef(
                 <Th color="white" px="0" textAlign="center">
                   Qty
                 </Th>
+                {costType === "size" && (
+                  <Th color="white" px="0" textAlign="center">
+                    Qty(sq. ft)
+                  </Th>
+                )}
                 <Th color="white" px="0" textAlign="center">
                   Unit Price
                 </Th>
@@ -207,8 +198,17 @@ const Invoice = forwardRef(
                         px="0"
                         textAlign="center"
                       >
-                        {quantity}
+                        {jobCardEntry?.quantity}
                       </Td>
+                      {costType === "size" && (
+                        <Td
+                          borderRight="1px maroon solid"
+                          px="0"
+                          textAlign="center"
+                        >
+                          {quantity}
+                        </Td>
+                      )}
                       <Td
                         borderRight="1px maroon solid"
                         p="0"
@@ -216,7 +216,14 @@ const Invoice = forwardRef(
                       >
                         <Input
                           type="number"
-                          value={unitPrice?.[index]}
+                          value={
+                            costType === "time"
+                              ? Math.ceil(
+                                  (unitPrice?.[index] / 60) *
+                                    jobCardEntry?.timeOfWork
+                                )
+                              : unitPrice?.[index]
+                          }
                           onChange={(e) =>
                             setUnitPrice([
                               ...unitPrice.slice(0, index),
@@ -240,7 +247,7 @@ const Invoice = forwardRef(
                 }
               )}
               {Array.from({
-                length: 11 - currentJobCard?.data.jobCardEntries?.length,
+                length: 13 - currentJobCard?.data.jobCardEntries?.length,
               }).map((_, index) => (
                 <Tr key={index}>
                   <Td borderRight="1px maroon solid"></Td>
@@ -312,9 +319,10 @@ const Invoice = forwardRef(
             length: Math.ceil(currentJobCard?.data?.jobCardEntries?.length / 4),
           }).map((_, idx) => (
             <Flex
-              w="740px"
-              minH="1018px"
+              w="780px"
+              minH="1102px"
               mt="5"
+              justifyContent="center"
               flexWrap="wrap"
               id={`image-cont-${idx}`}
               key={idx}
@@ -324,16 +332,17 @@ const Invoice = forwardRef(
                 return (
                   <Flex
                     key={index}
-                    minW="340px"
-                    height="509px"
+                    minW="365px"
+                    height="551px"
                     justifyContent="center"
                     alignItems="center"
                     border="1px solid black"
                     position="relative"
                   >
-                    <ChakraImage
+                    <Image
                       src={`${process.env.NEXT_PUBLIC_BASE_URL}${card.image}`}
                       width={300}
+                      height={500}
                       style={{
                         height: "auto",
                       }}
@@ -360,20 +369,23 @@ const DownloadInvoice = () => {
 
   const transactionId = searchParams.get("transactionId");
   const jobCardId = searchParams.get("jobCardId");
-  //   const costType = searchParams.get("costType") ?? "size";
   const componentRef = useRef(null);
-  const [costType, setCostType] = useState("size");
-  const [masterData, setMasterData] = useState(null);
+  const [costType, setCostType] = useState("time");
   const [unitPrice, setUnitPrice] = useState(new Array(100).fill(0));
 
-  const fetchFirstMaster = () => {
-    return axios
-      .get(`${process.env.NEXT_PUBLIC_BASE_URL}master`)
-      .then((res) => {
-        const masterData = res.data;
-        setMasterData(res.data);
-      });
+  const fetchFirstMaster = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BASE_URL}master`
+      );
+      return response.data;
+    } catch (err) {}
   };
+
+  const { data: masterData, isLoading: isLoadingMasterData } = useQuery({
+    queryKey: ["master-data"],
+    queryFn: fetchFirstMaster,
+  });
 
   const downloadPDF = async () => {
     generateInvoice();
@@ -461,9 +473,18 @@ const DownloadInvoice = () => {
     }
   );
 
-  // const generateInvoiceId = () =>{
-  //   return `${lastInvoiceNo}${new Date().getMonth().toFixed(2)}${new Date().getFullYear()}`
-  // }
+  const generateInvoice = () => {
+    return axios
+      .post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}transaction/invoice/new?transactionId=${transactionId}&jobCardId=${jobCardId}`,
+        {
+          costType,
+          unitPrice,
+        }
+      )
+      .then(() => toast("Invoice saved successfully", { type: "success" }))
+      .catch((err) => toast("Failed to save invoice", { type: "error" }));
+  };
 
   useEffect(() => {
     fetchFirstMaster();
@@ -471,14 +492,20 @@ const DownloadInvoice = () => {
   }, []);
 
   useEffect(() => {
-    if (costType === "size") {
-      setUnitPrice(new Array(100).fill(masterData?.pricePerSqFeet));
-    } else {
+    if (costType === "time") {
       setUnitPrice(new Array(100).fill(masterData?.pricePerHour));
+    } else {
+      setUnitPrice(new Array(100).fill(masterData?.pricePerSqFeet));
     }
   }, [costType, masterData]);
 
-  if (isLoading || isLoadingJobCard || isCurrentJobCardLoading) return <></>;
+  if (
+    isLoading ||
+    isLoadingJobCard ||
+    isCurrentJobCardLoading ||
+    isLoadingMasterData
+  )
+    return <></>;
 
   const getTotalQuantity = () => {
     let result = 0;
@@ -502,11 +529,6 @@ const DownloadInvoice = () => {
       ?.map((e) => Number(e.timeOfWork))
       .reduce((a, b) => a + b, 0) / 60;
 
-  // const amount = (
-  //   costType === "size"
-  //     ? getTotalMeasurment() * unitPrice
-  //     : (totalTimeOfWork * unitPrice).toFixed(2)
-  // ).toLocaleString();
   const getTotalAmount = () => {
     return currentJobCard?.data?.jobCardEntries
       ?.map((jobCardEntry, index) => {
@@ -519,19 +541,6 @@ const DownloadInvoice = () => {
       })
       ?.reduce((a, b) => a + b, 0)
       .toFixed(2);
-  };
-
-  const generateInvoice = () => {
-    return axios
-      .post(
-        `${process.env.NEXT_PUBLIC_BASE_URL}transaction/invoice/new?transactionId=${transactionId}&jobCardId=${jobCardId}`,
-        {
-          costType,
-          unitPrice,
-        }
-      )
-      .then(() => toast("Invoice saved successfully", { type: "success" }))
-      .catch((err) => toast("Failed to save invoice", { type: "error" }));
   };
 
   return (
@@ -559,26 +568,10 @@ const DownloadInvoice = () => {
             value={costType}
             onChange={(e) => setCostType(e.target.value)}
           >
-            <option value="size">Size</option>
             <option value="time">Time of work</option>
+            <option value="size">Size</option>
           </Select>
         </Flex>
-        {/* <Flex alignItems="center" bg="blue.300" p="2" borderRadius="md">
-          <Text w="36">Unit Price:</Text>
-          <InputGroup>
-            <Input
-              ml="3"
-              bg="white"
-              value={unitPrice}
-              onChange={(e) => setUnitPrice(e.target.value)}
-            />
-            <InputRightElement w="36">
-              <Text textAlign="right" color="grey.300" fontWeight="semibold">
-                {costType === "size" ? "per sq. feet" : "per hour"}
-              </Text>
-            </InputRightElement>
-          </InputGroup>
-        </Flex> */}
         <Button bg="green.300" onClick={downloadPDF}>
           Download Invoice
         </Button>

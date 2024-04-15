@@ -315,167 +315,166 @@ const Transaction = () => {
           </Flex>
         </Box>
       </Flex>
-      {transactionId && (
-        <TableContainer
-          mt="10"
-          borderRadius="lg"
-          shadow="md"
-          p="10"
-          pt="5"
-          borderColor="grey.100"
-          borderWidth="1px"
-        >
-          <Flex
-            alignItems="center"
-            mb="5"
-            w="full"
-            justifyContent="space-between"
-          >
-            <Text fontSize="20" fontWeight="semibold">
-              Job Card
-            </Text>
-            <Text ml="10" textDecoration="underline">
-              Opening Date:{" "}
-              {new Date(
-                currentTransaction?.data?.jobCards?.find(
-                  (jobCard) => jobCard.status === "unpaid"
-                )?.createdAt
-              ).toDateString()}
-            </Text>
-            <Text ml="10" textDecoration="underline">
-              Closing Date: N/A
-            </Text>
-            <Link
-              href={`/download-invoice?transactionId=${transactionId}&jobCardId=${
-                currentTransaction?.data?.jobCards?.find(
-                  (jobCard) => jobCard.status === "unpaid"
-                )?._id
-              }`}
-            >
-              <Button bg="green.300">Generate Invoice</Button>
-            </Link>
-          </Flex>
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th borderWidth="1px" borderColor="gray.200" w="10">
-                  Sr. no.
-                </Th>
-                <Th borderWidth="1px" borderColor="gray.200">
-                  Description
-                </Th>
-                <Th borderWidth="1px" borderColor="gray.200">
-                  Size (mm/inch)
-                </Th>
-                <Th borderWidth="1px" borderColor="gray.200">
-                  Quantity
-                </Th>
-                <Th borderWidth="1px" borderColor="gray.200">
-                  Machine
-                </Th>
-                <Th borderWidth="1px" borderColor="gray.200" w="14">
-                  Time of work
-                </Th>
-                <Th borderWidth="1px" borderColor="gray.200">
-                  Upload Screenshot
-                </Th>
-                <Th borderWidth="1px" borderColor="gray.200">
-                  Remark
-                </Th>
-                <Th borderWidth="1px" borderColor="gray.200">
-                  Action
-                </Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {currentTransaction?.data?.jobCards
-                ?.find((jobCard) => jobCard.status === "unpaid")
-                ?.jobCardEntries.map((jobCard, index) => (
-                  <Tr key={index}>
-                    <Td borderWidth="1px" borderColor="gray.200">
-                      <Text textAlign="center">{index + 1}</Text>
-                    </Td>
-                    <Td
-                      borderWidth="1px"
-                      borderColor="gray.200"
-                      maxW="32"
-                      overflowX="scroll"
-                    >
-                      {jobCard.description}
-                    </Td>
-                    <Td borderWidth="1px" borderColor="gray.200">
-                      <Flex alignItems="center" justifyContent="center">
-                        <Text mr="1">{jobCard.width ?? 0}</Text>
-                        {" x "}
-                        <Text ml="1">{jobCard.height ?? 0}</Text>
-                        <Text ml="1">{jobCard.sizeUnit}</Text>
-                      </Flex>
-                    </Td>
-                    <Td borderWidth="1px" borderColor="gray.200">
-                      <Text textAlign="center">{jobCard.quantity}</Text>
-                    </Td>
-                    <Td borderWidth="1px" borderColor="gray.200">
-                      <Text textAlign="center">{jobCard.machineNumber}</Text>
-                    </Td>
-                    <Td borderWidth="1px" borderColor="gray.200">
-                      <Text textAlign="center">{jobCard.timeOfWork} mins</Text>
-                    </Td>
-                    <Td borderWidth="1px" borderColor="gray.200">
-                      <Image
-                        src={`${process.env.NEXT_PUBLIC_BASE_URL}${jobCard.image}`}
-                        alt="image"
-                        width="10"
-                      />
-                    </Td>
-                    <Td
-                      borderWidth="1px"
-                      borderColor="gray.200"
-                      overflowX="scroll"
-                    >
-                      <Text textAlign="center">{jobCard.remark}</Text>
-                    </Td>
-                    <Td borderWidth="1px" borderColor="gray.200" minW="20">
-                      <Delete
-                        style={{ cursor: "pointer" }}
-                        onClick={() =>
-                          deleteJobCardEntry(
-                            currentTransaction?.data?.jobCards?.find(
-                              (jobCard) => jobCard.status === "unpaid"
-                            )._id,
-                            jobCard._id
-                          )
-                        }
-                      />
-                      <Edit
-                        style={{ cursor: "pointer", marginLeft: "10px" }}
-                        onClick={() => {
-                          setEntryModalData(jobCard);
-                          setShowAddEntryModal(true);
-                        }}
-                      />
-                    </Td>
-                  </Tr>
-                ))}
-            </Tbody>
-          </Table>
-          <Flex mt="5" justifyContent="flex-end" w="full">
-            <Button bg="teal.300" onClick={() => setShowAddEntryModal(true)}>
-              Add entry
-            </Button>
-            <Link
-              href={`/download-job-card?jobCardId=${
-                currentTransaction?.data?.jobCards?.find(
-                  (jobCard) => jobCard.status === "unpaid"
-                )?._id
-              }&transactionId=${transactionId}`}
-            >
-              <Button bg="green.300" ml="3">
-                Generate Job Card PDF
-              </Button>
-            </Link>
-          </Flex>
-        </TableContainer>
-      )}
+      {transactionId &&
+        currentTransaction?.data?.jobCards
+          ?.filter((jobCard) => jobCard.status === "unpaid")
+          ?.map((jobCard, index) => {
+            return (
+              <TableContainer
+                key={index}
+                mt="10"
+                borderRadius="lg"
+                shadow="md"
+                p="10"
+                pt="5"
+                borderColor="grey.100"
+                borderWidth="1px"
+              >
+                <Flex
+                  alignItems="center"
+                  mb="5"
+                  w="full"
+                  justifyContent="space-between"
+                >
+                  <Text fontSize="20" fontWeight="semibold">
+                    Job Card
+                  </Text>
+                  <Text ml="10" textDecoration="underline">
+                    Opening Date: {new Date(jobCard?.createdAt).toDateString()}
+                  </Text>
+                  <Text ml="10" textDecoration="underline">
+                    Closing Date: N/A
+                  </Text>
+                  <Link
+                    href={`/download-invoice?transactionId=${transactionId}&jobCardId=${jobCard?._id}`}
+                  >
+                    <Button bg="green.300">Generate Invoice</Button>
+                  </Link>
+                </Flex>
+                <Table variant="simple">
+                  <Thead>
+                    <Tr>
+                      <Th borderWidth="1px" borderColor="gray.200" w="10">
+                        Sr. no.
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200">
+                        Description
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200">
+                        Size (mm/inch)
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200">
+                        Quantity
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200">
+                        Machine
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200" w="14">
+                        Time of work
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200">
+                        Upload Screenshot
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200">
+                        Remark
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200">
+                        Action
+                      </Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {jobCard?.jobCardEntries.map((jobCardEntry, index) => (
+                      <Tr key={index}>
+                        <Td borderWidth="1px" borderColor="gray.200">
+                          <Text textAlign="center">{index + 1}</Text>
+                        </Td>
+                        <Td
+                          borderWidth="1px"
+                          borderColor="gray.200"
+                          maxW="32"
+                          overflowX="scroll"
+                        >
+                          {jobCardEntry.description}
+                        </Td>
+                        <Td borderWidth="1px" borderColor="gray.200">
+                          <Flex alignItems="center" justifyContent="center">
+                            <Text mr="1">{jobCardEntry.width ?? 0}</Text>
+                            {" x "}
+                            <Text ml="1">{jobCardEntry.height ?? 0}</Text>
+                            <Text ml="1">{jobCardEntry.sizeUnit}</Text>
+                          </Flex>
+                        </Td>
+                        <Td borderWidth="1px" borderColor="gray.200">
+                          <Text textAlign="center">
+                            {jobCardEntry.quantity}
+                          </Text>
+                        </Td>
+                        <Td borderWidth="1px" borderColor="gray.200">
+                          <Text textAlign="center">
+                            {jobCardEntry.machineNumber}
+                          </Text>
+                        </Td>
+                        <Td borderWidth="1px" borderColor="gray.200">
+                          <Text textAlign="center">
+                            {jobCardEntry.timeOfWork} mins
+                          </Text>
+                        </Td>
+                        <Td borderWidth="1px" borderColor="gray.200">
+                          <Image
+                            src={`${process.env.NEXT_PUBLIC_BASE_URL}${jobCardEntry.image}`}
+                            alt="image"
+                            width="10"
+                          />
+                        </Td>
+                        <Td
+                          borderWidth="1px"
+                          borderColor="gray.200"
+                          overflowX="scroll"
+                        >
+                          <Text textAlign="center">{jobCardEntry.remark}</Text>
+                        </Td>
+                        <Td borderWidth="1px" borderColor="gray.200" minW="20">
+                          <Delete
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              deleteJobCardEntry(jobCardEntry._id, jobCard._id)
+                            }
+                          />
+                          <Edit
+                            style={{ cursor: "pointer", marginLeft: "10px" }}
+                            onClick={() => {
+                              setEntryModalData(jobCard);
+                              setShowAddEntryModal(true);
+                            }}
+                          />
+                        </Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+                <Flex mt="5" justifyContent="flex-end" w="full">
+                  <Button
+                    bg="teal.300"
+                    onClick={() => setShowAddEntryModal(true)}
+                  >
+                    Add entry
+                  </Button>
+                  <Link
+                    href={`/download-job-card?jobCardId=${
+                      currentTransaction?.data?.jobCards?.find(
+                        (jobCard) => jobCard.status === "unpaid"
+                      )?._id
+                    }&transactionId=${transactionId}`}
+                  >
+                    <Button bg="green.300" ml="3">
+                      Generate Job Card PDF
+                    </Button>
+                  </Link>
+                </Flex>
+              </TableContainer>
+            );
+          })}
       {transactionId &&
         currentTransaction?.data?.jobCards
           ?.filter((jobCard) => jobCard.status === "closed")
