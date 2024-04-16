@@ -339,7 +339,7 @@ const Invoice = forwardRef(
                     border="1px solid black"
                     position="relative"
                   >
-                    <Image
+                    <ChakraImage
                       src={`${process.env.NEXT_PUBLIC_BASE_URL}${card.image}`}
                       width={300}
                       height={500}
