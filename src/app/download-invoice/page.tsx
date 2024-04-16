@@ -9,8 +9,6 @@ import {
   Heading,
   IconButton,
   Input,
-  InputGroup,
-  InputRightElement,
   Select,
   Table,
   TableContainer,
@@ -59,7 +57,7 @@ const Invoice = forwardRef(
     if (isLoadingInvoiceData) return <></>;
 
     return (
-      <Box borderWidth="1px" borderColor="black" p="5" ref={ref} maxW="780px">
+      <Box p="5" ref={ref} maxW="780px">
         <Flex justifyContent="space-between">
           <Image
             src={require("../../../public/logo.png")}
@@ -216,14 +214,7 @@ const Invoice = forwardRef(
                       >
                         <Input
                           type="number"
-                          value={
-                            costType === "time"
-                              ? Math.ceil(
-                                  (unitPrice?.[index] / 60) *
-                                    jobCardEntry?.timeOfWork
-                                )
-                              : unitPrice?.[index]
-                          }
+                          value={unitPrice?.[index]}
                           onChange={(e) =>
                             setUnitPrice([
                               ...unitPrice.slice(0, index),
@@ -304,7 +295,7 @@ const Invoice = forwardRef(
               <Text textAlign="center">Authorised Sign</Text>
             </Box>
           </Flex>
-          <Flex mt="5" pb="5" bg="maroon" flexDir="column" w="full">
+          <Flex mt="5" pb="7" bg="maroon" flexDir="column" w="full">
             <Text color="white" textAlign="center">
               ADDRESS: 193, Ward DC-2, Near Sonal Dham Temple, Gandhidham.
             </Text>
@@ -313,8 +304,7 @@ const Invoice = forwardRef(
             </Text>
           </Flex>
         </TableContainer>
-        <div id="my_mm" style={{ height: "100mm", display: "none" }}></div>
-        <>
+        <Box pt="5">
           {Array.from({
             length: Math.ceil(currentJobCard?.data?.jobCardEntries?.length / 4),
           }).map((_, idx) => (
@@ -339,7 +329,7 @@ const Invoice = forwardRef(
                     border="1px solid black"
                     position="relative"
                   >
-                    <ChakraImage
+                    <Image
                       src={`${process.env.NEXT_PUBLIC_BASE_URL}${card.image}`}
                       width={300}
                       height={500}
@@ -356,7 +346,7 @@ const Invoice = forwardRef(
               })}
             </Flex>
           ))}
-        </>
+        </Box>
       </Box>
     );
   }
@@ -486,6 +476,19 @@ const DownloadInvoice = () => {
       .catch((err) => toast("Failed to save invoice", { type: "error" }));
   };
 
+  const modifyUnitPriceOnInitialLoad = (
+    costType,
+    unitPrice,
+    jobCardEntries
+  ) => {
+    if (costType === "time") {
+      return unitPrice.map((price, index) => {
+        return Math.ceil((price / 60) * jobCardEntries?.[index]?.timeOfWork);
+      });
+    }
+    return unitPrice;
+  };
+
   useEffect(() => {
     fetchFirstMaster();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -493,11 +496,17 @@ const DownloadInvoice = () => {
 
   useEffect(() => {
     if (costType === "time") {
-      setUnitPrice(new Array(100).fill(masterData?.pricePerHour));
+      const prevUnitPrice = new Array(100).fill(masterData?.pricePerHour);
+      const newUnitPrices = modifyUnitPriceOnInitialLoad(
+        costType,
+        prevUnitPrice,
+        currentJobCard?.data?.jobCardEntries
+      );
+      setUnitPrice([...newUnitPrices]);
     } else {
       setUnitPrice(new Array(100).fill(masterData?.pricePerSqFeet));
     }
-  }, [costType, masterData]);
+  }, [costType, masterData, currentJobCard]);
 
   if (
     isLoading ||

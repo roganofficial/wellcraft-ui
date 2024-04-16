@@ -36,6 +36,7 @@ import { toast } from "react-toastify";
 import Link from "next/link";
 import AddJobEntryModal from "./AddJobEntryModal";
 import ClosedJobCard from "./ClosedJobCard";
+import { saveImage } from "../utils";
 
 const Transaction = () => {
   const searchParams = useSearchParams();
@@ -116,20 +117,8 @@ const Transaction = () => {
         refetchTransactions();
       })
       .catch((err) => {
-        toast("Job Card Entry deletion failed", { type: "error" });
+        toast("Job Card Entry deletion failed " + err, { type: "error" });
       });
-  };
-
-  const resetFields = () => {
-    setDescrption("");
-    setHeight("");
-    setWidth("");
-    setSizeUnit("");
-    setQuantity("");
-    setMachineNumber("");
-    setTimeOfWork("");
-    setRemark("");
-    setImage(null);
   };
 
   const fetchFirstMaster = () => {
@@ -140,6 +129,30 @@ const Transaction = () => {
         setMasterData(res.data);
       });
   };
+
+  const addNewEmptyJobCard = () => {
+    return axios
+      .post(
+        `${process.env.NEXT_PUBLIC_BASE_URL}jobCards/empty?transactionId=${transactionId}`
+      )
+      .then(() => {
+        refetchTransactions();
+      })
+      .catch((err) => {
+        toast("Something went wrong " + err, { type: "error" });
+      });
+  };
+
+  useEffect(() => {
+    if (
+      transactionId &&
+      currentTransaction?.data?.jobCards?.filter(
+        (transaction) => transaction.status === "unpaid"
+      )?.length === 0
+    ) {
+      addNewEmptyJobCard();
+    }
+  }, [currentTransaction, transactionId]);
 
   useEffect(() => {
     fetchFirstMaster();
@@ -373,7 +386,10 @@ const Transaction = () => {
                         Time of work
                       </Th>
                       <Th borderWidth="1px" borderColor="gray.200">
-                        Upload Screenshot
+                        Screenshot
+                      </Th>
+                      <Th borderWidth="1px" borderColor="gray.200">
+                        Ref Image
                       </Th>
                       <Th borderWidth="1px" borderColor="gray.200">
                         Remark
@@ -427,6 +443,25 @@ const Transaction = () => {
                             width="10"
                           />
                         </Td>
+                        <Td borderWidth="1px" borderColor="gray.200">
+                          <Image
+                            src={`${process.env.NEXT_PUBLIC_BASE_URL}${jobCardEntry.refImage}`}
+                            alt="image"
+                            width="10"
+                          />
+                          <Text
+                            color="blue"
+                            cursor="pointer"
+                            onClick={() =>
+                              saveImage(
+                                `${process.env.NEXT_PUBLIC_BASE_URL}${jobCardEntry.refImage}`,
+                                `${jobCardEntry?.description}-Ref-Image`
+                              )
+                            }
+                          >
+                            Download
+                          </Text>
+                        </Td>
                         <Td
                           borderWidth="1px"
                           borderColor="gray.200"
@@ -438,13 +473,18 @@ const Transaction = () => {
                           <Delete
                             style={{ cursor: "pointer" }}
                             onClick={() =>
-                              deleteJobCardEntry(jobCardEntry._id, jobCard._id)
+                              deleteJobCardEntry(jobCard._id, jobCardEntry._id)
                             }
                           />
                           <Edit
                             style={{ cursor: "pointer", marginLeft: "10px" }}
                             onClick={() => {
-                              setEntryModalData(jobCard);
+                              setEntryModalData({
+                                ...jobCardEntry,
+                                jobCardId: jobCard._id,
+                                image: jobCardEntry.image,
+                                type: "EDIT",
+                              });
                               setShowAddEntryModal(true);
                             }}
                           />
@@ -456,7 +496,10 @@ const Transaction = () => {
                 <Flex mt="5" justifyContent="flex-end" w="full">
                   <Button
                     bg="teal.300"
-                    onClick={() => setShowAddEntryModal(true)}
+                    onClick={() => {
+                      setEntryModalData(null);
+                      setShowAddEntryModal(true);
+                    }}
                   >
                     Add entry
                   </Button>

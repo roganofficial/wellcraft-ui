@@ -109,6 +109,42 @@ const MasterPanel = () => {
     }
   };
 
+  const addEntryContractor = (contractorName, contractorPhone) => {
+    if (
+      contractorInfo
+        .map((info) => info.name.toLowerCase())
+        .includes(contractorName.toLowerCase())
+    ) {
+      toast("Contractor already exist", { type: "warning" });
+      return;
+    }
+    addInfo(
+      {
+        name: contractorName,
+        phone: contractorPhone,
+        _id: `${contractorName}${contractorPhone}${Date.now()}`,
+      },
+      setContractorInfo
+    );
+  };
+  const addEntryCustomer = (customerName, customerPhone) => {
+    if (
+      customerInfo
+        .map((info) => info.name.toLowerCase())
+        .includes(customerName.toLowerCase())
+    ) {
+      toast("Customer already exist", { type: "warning" });
+      return;
+    }
+    addInfo(
+      {
+        name: customerName,
+        phone: customerPhone,
+        _id: `${customerName}${customerPhone}${Date.now()}`,
+      },
+      setCustomerInfo
+    );
+  };
   useEffect(() => {
     fetchFirstMaster();
   }, []);
@@ -191,14 +227,7 @@ const MasterPanel = () => {
                         aria-label="back-button"
                         background="grey.100"
                         onClick={() =>
-                          addInfo(
-                            {
-                              name: customerName,
-                              phone: customerPhone,
-                              _id: `${customerName}${customerPhone}${Date.now()}`,
-                            },
-                            setCustomerInfo
-                          )
+                          addEntryCustomer(customerName, customerPhone)
                         }
                       />
                     </Flex>
@@ -268,14 +297,7 @@ const MasterPanel = () => {
                         aria-label="back-button"
                         background="grey.100"
                         onClick={() =>
-                          addInfo(
-                            {
-                              name: contractorName,
-                              phone: contractorPhone,
-                              _id: `${contractorName}${contractorPhone}${Date.now()}`,
-                            },
-                            setContractorInfo
-                          )
+                          addEntryContractor(contractorName, contractorPhone)
                         }
                       />
                     </Flex>

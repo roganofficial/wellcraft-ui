@@ -46,16 +46,9 @@ const AddJobEntryModal = ({
   const [timeOfWork, setTimeOfWork] = useState("");
   const [remark, setRemark] = useState("");
   const [image, setImage] = useState();
+  const [refImage, setRefImage] = useState();
 
   const addJobCard = async () => {
-    if (entryModalData) {
-      deleteJobCardEntry(
-        currentTransaction?.data?.jobCards?.find(
-          (jobCard) => jobCard.status === "unpaid"
-        )._id,
-        entryModalData._id
-      );
-    }
     const formData = new FormData();
     formData.append(
       "description",
@@ -69,8 +62,26 @@ const AddJobEntryModal = ({
     formData.append("timeOfWork", timeOfWork);
     formData.append("remark", remark);
     formData.append("transactionId", String(transactionId));
-    if (image) {
-      formData.append("image", image);
+    console.log("images", typeof image);
+    if (image && entryModalData?.type === "EDIT") {
+      const imageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${image}`;
+      const imageData = await fetch(imageUrl);
+      const blob = await imageData.blob();
+      const imageStringSplit = image.split(".");
+      const extension =
+        imageStringSplit[imageStringSplit.length - 1].toLowerCase();
+      const file = new File([blob], "image.jpg", {
+        type: `image/${extension}`,
+      });
+
+      formData.append("image", file);
+    } else {
+      if (image) {
+        formData.append("image", image);
+      }
+    }
+    if (refImage) {
+      formData.append("refImage", refImage);
     }
 
     axios({
@@ -80,11 +91,17 @@ const AddJobEntryModal = ({
       headers: { "Content-Type": "multipart/form-data" },
     })
       .then((e) => {
-        toast("Job Card saved successfully", { type: "success" });
+        if (!entryModalData) {
+          toast("Job Card saved successfully", { type: "success" });
+        }
+        if (entryModalData) {
+          toast("Job Card edited successfully", { type: "success" });
+          deleteJobCardEntry(entryModalData.jobCardId, entryModalData._id);
+        }
         refetchTransactions();
         onClose();
         // refetchJobCards();
-        // resetFields();
+        resetFields();
       })
       .catch((err) => {
         toast("Job Card saving failed", { type: "error" });
@@ -111,9 +128,24 @@ const AddJobEntryModal = ({
     }
   }
 
+  const resetFields = () => {
+    setTypeOfWork("");
+    setMaterialThickness("");
+    setMaterialName("");
+    setHeight("");
+    setWidth("");
+    setSizeUnit("");
+    setQuantity("");
+    setMachineNumber("");
+    setTimeOfWork("");
+    setRemark("");
+    setImage(null);
+  };
+
   useEffect(() => {
     if (entryModalData) {
-      const description = entryModalData.description.split("in");
+      console.log(entryModalData);
+      const description = entryModalData.description.split(" in ");
       const typeOfWork = description[0];
       const remainText = description[1]
         .split(" ")
@@ -266,31 +298,62 @@ const AddJobEntryModal = ({
               </Box>
             </Flex>
             <Divider my="5" bg="black" h="1px" />
-            <Box as="label" fontWeight="semibold">
-              Upload Screenshot
-            </Box>
-            {image ? (
-              <Image
-                width={240}
-                height={135}
-                src={
-                  typeof image === "string"
-                    ? `${process.env.NEXT_PUBLIC_BASE_URL}${image}`
-                    : URL.createObjectURL(image)
-                }
-                alt="upload-image"
-                onClick={() => setImage(null)}
-              />
-            ) : (
-              // <Button onClick={pasteImg}>paste</Button>
-              <Input
-                height="38"
-                mt="2"
-                border="none"
-                type="file"
-                onChange={(e) => setImage(e.target.files[0])}
-              />
-            )}
+            <Flex justifyContent="space-between" alignItems="center">
+              <Box p="5" background="gray.100" borderRadius="lg">
+                <Box as="label" fontWeight="semibold">
+                  Upload Screenshot
+                </Box>
+                {image ? (
+                  <Image
+                    width={240}
+                    height={135}
+                    src={
+                      typeof image === "string"
+                        ? `${process.env.NEXT_PUBLIC_BASE_URL}${image}`
+                        : URL.createObjectURL(image)
+                    }
+                    alt="upload-image"
+                    onClick={() => setImage(null)}
+                  />
+                ) : (
+                  // <Button onClick={pasteImg}>paste</Button>
+                  <Input
+                    height="38"
+                    mt="2"
+                    border="none"
+                    type="file"
+                    onChange={(e) => setImage(e.target.files[0])}
+                  />
+                )}
+              </Box>
+              <Box p="5" background="gray.100" borderRadius="lg" ml="5">
+                <Box as="label" fontWeight="semibold">
+                  Upload Reference image
+                </Box>
+                {refImage ? (
+                  <Image
+                    width={240}
+                    height={135}
+                    src={
+                      typeof refImage === "string"
+                        ? `${process.env.NEXT_PUBLIC_BASE_URL}${refImage}`
+                        : URL.createObjectURL(refImage)
+                    }
+                    alt="upload-image"
+                    onClick={() => setRefImage(null)}
+                  />
+                ) : (
+                  // <Button onClick={pasteImg}>paste</Button>
+                  <Input
+                    height="38"
+                    mt="2"
+                    border="none"
+                    type="file"
+                    onChange={(e) => setRefImage(e.target.files[0])}
+                  />
+                )}
+              </Box>
+            </Flex>
             <Divider my="5" bg="black" h="1px" />
             <Box>
               <Box as="label" fontWeight="semibold">
