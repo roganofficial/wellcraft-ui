@@ -36,7 +36,7 @@ import { toast } from "react-toastify";
 import Link from "next/link";
 import AddJobEntryModal from "./AddJobEntryModal";
 import ClosedJobCard from "./ClosedJobCard";
-import { saveImage } from "../utils";
+import { checkIfJobCardEntryCompleted, saveImage } from "../utils";
 
 const Transaction = () => {
   const searchParams = useSearchParams();
@@ -55,7 +55,6 @@ const Transaction = () => {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}transaction/one?transactionId=${transactionId}`
       );
-      console.log(response);
       return response;
     } catch (error) {
       console.error(error);
@@ -90,7 +89,6 @@ const Transaction = () => {
   });
 
   const addTransaction = async () => {
-    console.log(customerInfo, contractorInfo);
     axios
       .post(`${process.env.NEXT_PUBLIC_BASE_URL}transaction/new`, {
         customerInfoId: customerInfo,
@@ -358,11 +356,13 @@ const Transaction = () => {
                   <Text ml="10" textDecoration="underline">
                     Closing Date: N/A
                   </Text>
-                  <Link
-                    href={`/download-invoice?transactionId=${transactionId}&jobCardId=${jobCard?._id}`}
-                  >
-                    <Button bg="green.300">Generate Invoice</Button>
-                  </Link>
+                  {jobCard?.jobCardEntries?.length > 0 && (
+                    <Link
+                      href={`/download-invoice?transactionId=${transactionId}&jobCardId=${jobCard?._id}`}
+                    >
+                      <Button bg="green.300">Generate Invoice</Button>
+                    </Link>
+                  )}
                 </Flex>
                 <Table variant="simple">
                   <Thead>
@@ -401,7 +401,14 @@ const Transaction = () => {
                   </Thead>
                   <Tbody>
                     {jobCard?.jobCardEntries.map((jobCardEntry, index) => (
-                      <Tr key={index}>
+                      <Tr
+                        key={index}
+                        bg={
+                          !checkIfJobCardEntryCompleted(jobCardEntry)
+                            ? "lightyellow"
+                            : "white"
+                        }
+                      >
                         <Td borderWidth="1px" borderColor="gray.200">
                           <Text textAlign="center">{index + 1}</Text>
                         </Td>
@@ -501,19 +508,21 @@ const Transaction = () => {
                       setShowAddEntryModal(true);
                     }}
                   >
-                    Add entry
+                    Add Item
                   </Button>
-                  <Link
-                    href={`/download-job-card?jobCardId=${
-                      currentTransaction?.data?.jobCards?.find(
-                        (jobCard) => jobCard.status === "unpaid"
-                      )?._id
-                    }&transactionId=${transactionId}`}
-                  >
-                    <Button bg="green.300" ml="3">
-                      Generate Job Card PDF
-                    </Button>
-                  </Link>
+                  {jobCard?.jobCardEntries?.length > 0 && (
+                    <Link
+                      href={`/download-job-card?jobCardId=${
+                        currentTransaction?.data?.jobCards?.find(
+                          (jobCard) => jobCard.status === "unpaid"
+                        )?._id
+                      }&transactionId=${transactionId}`}
+                    >
+                      <Button bg="green.300" ml="3">
+                        Generate Job Card PDF
+                      </Button>
+                    </Link>
+                  )}
                 </Flex>
               </TableContainer>
             );

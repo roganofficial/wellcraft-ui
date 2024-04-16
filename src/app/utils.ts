@@ -20,3 +20,20 @@ export const saveImage = async (url, filename) => {
   document.body.removeChild(link);
   return;
 };
+
+export const checkIfJobCardEntryCompleted = (jobCardEntry) => {
+  if (
+    jobCardEntry.description &&
+    jobCardEntry.width &&
+    jobCardEntry.height &&
+    jobCardEntry.sizeUnit &&
+    jobCardEntry.quantity &&
+    jobCardEntry.machineNumber &&
+    jobCardEntry.timeOfWork &&
+    jobCardEntry.image &&
+    jobCardEntry.refImage
+  ) {
+    return true;
+  }
+  return false;
+};

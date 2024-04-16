@@ -30,7 +30,11 @@ const ClosedJobCard = ({ jobCard, transactionId }) => {
     );
     return result.data;
   };
-  const { data: invoiceData, isLoading: isLoadingInvoiceData } = useQuery({
+  const {
+    data: invoiceData,
+    isLoading: isLoadingInvoiceData,
+    refetch: refetchInvoice,
+  } = useQuery({
     queryKey: ["fetch-invoice"],
     queryFn: fetchInvoiceByJobCardId,
   });
@@ -40,27 +44,46 @@ const ClosedJobCard = ({ jobCard, transactionId }) => {
       .put(
         `${process.env.NEXT_PUBLIC_BASE_URL}transaction/invoice/payment?invoiceId=${invoiceData?.[0]?._id}`,
         {
-          paymentAmount,
+          paymentAmount:
+            Number(paymentAmount) + Number(invoiceData?.[0]?.paymentAmount) ??
+            0,
           status,
         }
       )
-      .then(() => toast("Payment updated successfully", { type: "success" }))
+      .then(() => {
+        toast("Payment updated successfully", { type: "success" });
+        refetchInvoice();
+      })
       .catch(() => toast("Payment update failed", { type: "error" }));
   };
 
-  useEffect(() => {
-    setPaymentAmount(invoiceData?.[0]?.paymentAmount ?? 0);
-    setStatus(invoiceData?.[0]?.status ?? "unpaid");
-  }, [invoiceData]);
+  const getTotalAmount = () => {
+    const otherCharges =
+      invoiceData?.[0]?.otherCharges.length > 0
+        ? invoiceData?.[0]?.otherCharges?.reduce(
+            (a, b) => a + Number(b.value),
+            0
+          )
+        : 0;
+    const primaryAmountMap = jobCard?.jobCardEntries?.map(
+      (jobCardEntry, index) => {
+        const quantity =
+          costType === "size"
+            ? getTotalMeasurment(jobCardEntry)
+            : getTotalQuantity(jobCardEntry);
+        const unitPrice = invoiceData?.[0]?.unitPrice[index];
+        const amount = quantity * unitPrice;
+        return amount;
+      }
+    );
+    const totalPrimaryAmount = primaryAmountMap.reduce((a, b) => a + b, 0);
+    return otherCharges + totalPrimaryAmount;
+  };
 
   if (isLoadingInvoiceData) return <></>;
 
-  const getTotalQuantity = () => {
-    let result = 0;
-    jobCard?.jobCardEntries?.forEach((data) => {
-      result += Number(data.quantity);
-    });
-    return result;
+  const getTotalQuantity = (jobCardEntry) => {
+    return Number(jobCardEntry?.quantity) ?? 0;
   };
 
   const getTotalMeasurment = (data) => {
@@ -101,10 +124,75 @@ const ClosedJobCard = ({ jobCard, transactionId }) => {
         <Link
           href={`/download-invoice?transactionId=${transactionId}&jobCardId=${jobCard._id}`}
         >
-          <Button bg="green.300">Generate Invoice</Button>
+          <Button bg="green.300">View Invoice</Button>
         </Link>
       </Flex>
-      <Flex
+      <Table variant="simple" bg="teal.300">
+        <Thead>
+          <Tr>
+            <Th borderWidth="1px" borderColor="gray.200" w="10">
+              Billed By
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200" w="10">
+              Total Amount
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200">
+              Paid Amount
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200">
+              Remaining Amount
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200">
+              Payment Status
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200">
+              Amount Paying
+            </Th>
+            <Th borderWidth="1px" borderColor="gray.200"></Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          <Tr>
+            <Td borderWidth="1px" borderColor="gray.200">
+              <Text textAlign="center">{invoiceData?.[0]?.costType}</Text>
+            </Td>
+            <Td borderWidth="1px" borderColor="gray.200">
+              <Text textAlign="center">₹{getTotalAmount()}</Text>
+            </Td>
+            <Td borderWidth="1px" borderColor="gray.200">
+              <Text textAlign="center">₹{invoiceData?.[0]?.paymentAmount}</Text>
+            </Td>
+            <Td borderWidth="1px" borderColor="gray.200">
+              <Text textAlign="center">
+                ₹{getTotalAmount() - Number(invoiceData?.[0]?.paymentAmount)}
+              </Text>
+            </Td>
+            <Td borderWidth="1px" borderColor="gray.200">
+              <Text textAlign="center">
+                {getTotalAmount() - Number(invoiceData?.[0]?.paymentAmount) > 0
+                  ? "Unpaid"
+                  : "Paid"}
+              </Text>
+            </Td>
+            <Td borderWidth="1px" borderColor="gray.200">
+              <Input
+                ml="5"
+                bg="white"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder="Invoice amount"
+                w="32"
+              />
+            </Td>
+            <Td borderWidth="1px" borderColor="gray.200">
+              <Button bg="gray.500" onClick={updatePaymentInfo}>
+                Save
+              </Button>
+            </Td>
+          </Tr>
+        </Tbody>
+      </Table>
+      {/* <Flex
         alignItems="center"
         bg="teal.300"
         px="5"
@@ -121,6 +209,8 @@ const ClosedJobCard = ({ jobCard, transactionId }) => {
           </Box>
         </Text>
         <Flex ml="10" alignItems="center">
+          <Text fontWeight="semibold">Total Amount :</Text>
+          <Text fontWeight="semibold">Paid Amount :</Text>
           <Text>Payment Status :</Text>
           <Select
             ml="5"
@@ -146,7 +236,7 @@ const ClosedJobCard = ({ jobCard, transactionId }) => {
         <Button bg="gray.500" onClick={updatePaymentInfo}>
           Save
         </Button>
-      </Flex>
+      </Flex> */}
       <Table variant="simple">
         <Thead>
           <Tr>
@@ -175,7 +265,7 @@ const ClosedJobCard = ({ jobCard, transactionId }) => {
             const quantity =
               costType === "size"
                 ? getTotalMeasurment(jobCard)
-                : getTotalQuantity();
+                : getTotalQuantity(jobCard);
             const unitPrice = invoiceData?.[0]?.unitPrice[index];
             const amount = (quantity * unitPrice).toFixed(2);
             return (

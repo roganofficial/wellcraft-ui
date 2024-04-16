@@ -44,7 +44,6 @@ const DownloadJobCard = () => {
       .get(`${process.env.NEXT_PUBLIC_BASE_URL}master`)
       .then((res) => {
         const masterData = res.data;
-        console.log(masterData);
         setMasterData(res.data);
       });
   };
@@ -75,7 +74,6 @@ const DownloadJobCard = () => {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}transaction/one?transactionId=${transactionId}`
       );
-      console.log(response);
       return response;
     } catch (error) {
       console.error(error);
@@ -87,7 +85,6 @@ const DownloadJobCard = () => {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BASE_URL}jobCards/one?jobCardId=${jobCardId}`
       );
-      console.log(response.data);
       return response;
     } catch (error) {
       console.error(error);
@@ -100,8 +97,6 @@ const DownloadJobCard = () => {
       queryFn: fetchJobCard,
     }
   );
-
-  console.log(currentJobCard);
 
   const { data: transaction, isLoading } = useQuery({
     queryKey: ["fetch-transaction"],

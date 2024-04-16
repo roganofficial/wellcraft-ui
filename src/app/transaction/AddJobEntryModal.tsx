@@ -34,7 +34,6 @@ const AddJobEntryModal = ({
   transactionId: string;
   refetchTransactions: () => void;
 }) => {
-  console.log(masterData.typeOfWork);
   const [typeOfWork, setTypeOfWork] = useState("");
   const [materialThickness, setMaterialThickness] = useState("");
   const [materialName, setMaterialName] = useState("");
@@ -62,7 +61,6 @@ const AddJobEntryModal = ({
     formData.append("timeOfWork", timeOfWork);
     formData.append("remark", remark);
     formData.append("transactionId", String(transactionId));
-    console.log("images", typeof image);
     if (image && entryModalData?.type === "EDIT") {
       const imageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${image}`;
       const imageData = await fetch(imageUrl);
@@ -118,7 +116,6 @@ const AddJobEntryModal = ({
           var file = new File([blob], "image", {
             type: "image/jpeg",
           });
-          console.log(URL.createObjectURL(file));
           setImage(file);
           // we can now use blob here
         }
@@ -140,11 +137,11 @@ const AddJobEntryModal = ({
     setTimeOfWork("");
     setRemark("");
     setImage(null);
+    setRefImage(null);
   };
 
   useEffect(() => {
     if (entryModalData) {
-      console.log(entryModalData);
       const description = entryModalData.description.split(" in ");
       const typeOfWork = description[0];
       const remainText = description[1]
@@ -164,6 +161,7 @@ const AddJobEntryModal = ({
       setTimeOfWork(entryModalData.timeOfWork);
       setRemark(entryModalData.remark);
       setImage(entryModalData.image);
+      setRefImage(entryModalData.refImage);
     }
   }, [entryModalData]);
 

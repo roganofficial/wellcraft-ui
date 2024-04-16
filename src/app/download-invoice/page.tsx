@@ -39,7 +39,14 @@ const Invoice = forwardRef(
       getTotalQuantity,
       unitPrice,
       setUnitPrice,
-      getTotalAmount,
+      totalAmount,
+      otherCharges1,
+      setOtherCharges1,
+      otherCharges2,
+      setOtherCharges2,
+      otherCharges3,
+      setOtherCharges3,
+      grandTotal,
     },
     ref
   ) => {
@@ -54,11 +61,59 @@ const Invoice = forwardRef(
       queryFn: fetchInvoiceByJobCardId,
     });
 
+    useEffect(() => {
+      if (costType === "time") {
+        const prevUnitPrice = new Array(100).fill(masterData?.pricePerHour);
+        const newUnitPrices = prevUnitPrice.map((price, index) => {
+          if (invoiceData?.[0]?.unitPrice?.[index]) {
+            return invoiceData?.[0]?.unitPrice?.[index];
+          }
+          return Math.ceil(
+            (price / 60) *
+              currentJobCard?.data?.jobCardEntries?.[index]?.timeOfWork
+          );
+        });
+        setUnitPrice([...newUnitPrices]);
+      } else {
+        setUnitPrice(new Array(100).fill(masterData?.pricePerSqFeet));
+      }
+    }, [costType, masterData, currentJobCard, invoiceData]);
+
+    useEffect(() => {
+      if (invoiceData?.[0]?.otherCharges?.length > 0) {
+        const otherCharges = invoiceData?.[0]?.otherCharges;
+        if (otherCharges[0]?.field) console.log(otherCharges[0]?.field);
+        setOtherCharges1((prevValue) => {
+          return { ...prevValue, field: otherCharges?.[0]?.field ?? "" };
+        });
+        if (otherCharges[0]?.value)
+          setOtherCharges1((prevValue) => {
+            return { ...prevValue, value: otherCharges?.[0]?.value ?? "" };
+          });
+        if (otherCharges[1]?.field)
+          setOtherCharges2((prevValue) => {
+            return { ...prevValue, field: otherCharges?.[1]?.field ?? "" };
+          });
+        if (otherCharges[1]?.value)
+          setOtherCharges2((prevValue) => {
+            return { ...prevValue, value: otherCharges?.[1]?.value ?? "" };
+          });
+        if (otherCharges[2]?.field)
+          setOtherCharges3((prevValue) => {
+            return { ...prevValue, field: otherCharges?.[2]?.field ?? "" };
+          });
+        if (otherCharges[2]?.value)
+          setOtherCharges3((prevValue) => {
+            return { ...prevValue, value: otherCharges?.[2]?.value ?? "" };
+          });
+      }
+    }, [invoiceData]);
+
     if (isLoadingInvoiceData) return <></>;
 
     return (
       <Box p="5" ref={ref} maxW="780px">
-        <Flex justifyContent="space-between">
+        <Flex justifyContent="space-between" alignItems="center" mt="5">
           <Image
             src={require("../../../public/logo.png")}
             alt="logo"
@@ -74,31 +129,7 @@ const Invoice = forwardRef(
             INVOICE
           </Text>
         </Flex>
-        <Flex justifyContent="flex-end" mt="5">
-          <Box>
-            <Text>
-              <Box as="span" fontWeight="semibold">
-                Invoice/ :
-              </Box>
-              <Box as="span" ml="3" textDecoration="underline" minW="48">
-                {jobCardId}
-              </Box>
-            </Text>
-            <Text mt="3">
-              <Box as="span" fontWeight="semibold">
-                Invoice Date:
-              </Box>
-              <Box as="span" ml="3" textDecoration="underline" minW="48">
-                <i>
-                  {` ${new Date().getDate()}/ ${
-                    new Date().getMonth() + 1
-                  }/ ${new Date().getFullYear()}`}
-                </i>
-              </Box>
-            </Text>
-          </Box>
-        </Flex>
-        <Flex>
+        <Flex justifyContent="space-between" alignItems="center" mt="5">
           <Box>
             <Text fontSize="16">
               <Box as="span" fontWeight="semibold">
@@ -137,9 +168,32 @@ const Invoice = forwardRef(
               </Box>
             </Text>
           </Box>
+          <Box>
+            <Text>
+              <Box as="span" fontWeight="semibold">
+                Invoice/ :
+              </Box>
+              <Box as="span" ml="3" textDecoration="underline" minW="48">
+                {jobCardId}
+              </Box>
+            </Text>
+            <Text mt="3">
+              <Box as="span" fontWeight="semibold">
+                Invoice Date:
+              </Box>
+              <Box as="span" ml="3" textDecoration="underline" minW="48">
+                <i>
+                  {` ${new Date().getDate()}/ ${
+                    new Date().getMonth() + 1
+                  }/ ${new Date().getFullYear()}`}
+                </i>
+              </Box>
+            </Text>
+          </Box>
         </Flex>
+        <Flex></Flex>
         <TableContainer mt="5">
-          <Table variant="simple" border="1px maroon solid">
+          <Table variant="simple" border="1px solid maroon">
             <Thead bg="maroon">
               <Tr>
                 <Th color="white" px="0" pl="1">
@@ -159,10 +213,10 @@ const Invoice = forwardRef(
                     Qty(sq. ft)
                   </Th>
                 )}
-                <Th color="white" px="0" textAlign="center">
+                <Th color="white" px="0" textAlign="center" w="32">
                   Unit Price
                 </Th>
-                <Th color="white" px="0" textAlign="center">
+                <Th color="white" px="0" textAlign="center" w="32">
                   Amount
                 </Th>
               </Tr>
@@ -173,7 +227,7 @@ const Invoice = forwardRef(
                   const quantity =
                     costType === "size"
                       ? getTotalMeasurment(jobCardEntry)
-                      : getTotalQuantity();
+                      : getTotalQuantity(jobCardEntry);
                   const amount = (quantity * unitPrice?.[index]).toFixed(2);
                   return (
                     <Tr key={index}>
@@ -238,7 +292,7 @@ const Invoice = forwardRef(
                 }
               )}
               {Array.from({
-                length: 13 - currentJobCard?.data.jobCardEntries?.length,
+                length: 12 - currentJobCard?.data.jobCardEntries?.length,
               }).map((_, index) => (
                 <Tr key={index}>
                   <Td borderRight="1px maroon solid"></Td>
@@ -247,10 +301,49 @@ const Invoice = forwardRef(
                   <Td borderRight="1px maroon solid"></Td>
                   <Td borderRight="1px maroon solid"></Td>
                   <Td borderRight="1px maroon solid"></Td>
+                  {costType === "size" && (
+                    <Td borderRight="1px maroon solid"></Td>
+                  )}
                 </Tr>
               ))}
+              <Tr>
+                <Td
+                  borderBottom="1px maroon solid !important"
+                  borderRight="1px maroon solid"
+                ></Td>
+                <Td
+                  borderBottom="1px maroon solid !important"
+                  borderRight="1px maroon solid"
+                ></Td>
+                <Td
+                  borderBottom="1px maroon solid !important"
+                  borderRight="1px maroon solid"
+                ></Td>
+                <Td
+                  borderBottom="1px maroon solid !important"
+                  borderRight="1px maroon solid"
+                ></Td>
+                <Td
+                  borderBottom="1px maroon solid !important"
+                  borderRight="1px maroon solid"
+                ></Td>
+                <Td
+                  borderBottom="1px maroon solid !important"
+                  borderRight="1px maroon solid"
+                ></Td>
+                {costType === "size" && (
+                  <Td
+                    borderBottom="1px maroon solid !important"
+                    borderRight="1px maroon solid"
+                  ></Td>
+                )}
+              </Tr>
               <Tr borderRight="1px maroon solid">
-                <Td borderRight="1px maroon solid" colSpan={4} rowSpan={5}>
+                <Td
+                  borderRight="1px maroon solid"
+                  colSpan={costType === "size" ? 5 : 4}
+                  rowSpan={5}
+                >
                   <Flex justifyContent="flex-start"></Flex>
                 </Td>
                 <Td
@@ -260,21 +353,118 @@ const Invoice = forwardRef(
                 >
                   Total
                 </Td>
-                <Td borderRight="1px maroon solid">₹{getTotalAmount()}</Td>
+                <Td borderRight="1px maroon solid" textAlign="center">
+                  ₹{totalAmount}
+                </Td>
               </Tr>
               <Tr>
-                <Td borderRight="1px maroon solid"></Td>
-                <Td borderRight="1px maroon solid"></Td>
+                <Td p="0" borderRight="1px maroon solid">
+                  <Input
+                    w="full"
+                    value={otherCharges1?.["field"]}
+                    onChange={(e) =>
+                      setOtherCharges1((prevValue) => {
+                        return { ...prevValue, field: e.target.value };
+                      })
+                    }
+                    px="0"
+                    border="none"
+                    fontWeight="semibold"
+                    textAlign="center"
+                  />
+                </Td>
+                <Td p="0" borderRight="1px maroon solid">
+                  <Input
+                    type="number"
+                    value={otherCharges1?.["value"]}
+                    onChange={(e) =>
+                      setOtherCharges1((prevValue) => {
+                        return { ...prevValue, value: e.target.value };
+                      })
+                    }
+                    border="none"
+                    w="full"
+                    p="0"
+                    textAlign="center"
+                  />
+                </Td>
               </Tr>
               <Tr>
-                <Td borderRight="1px maroon solid"></Td>
-                <Td borderRight="1px maroon solid"></Td>
+                <Td p="0" borderRight="1px maroon solid">
+                  <Input
+                    value={otherCharges2?.["field"]}
+                    onChange={(e) =>
+                      setOtherCharges2((prevValue) => {
+                        return { ...prevValue, field: e.target.value };
+                      })
+                    }
+                    border="none"
+                    w="full"
+                    fontWeight="semibold"
+                    p="0"
+                    textAlign="center"
+                  />
+                </Td>
+                <Td p="0" borderRight="1px maroon solid">
+                  <Input
+                    type="number"
+                    value={otherCharges2?.["value"]}
+                    onChange={(e) =>
+                      setOtherCharges2((prevValue) => {
+                        return { ...prevValue, value: e.target.value };
+                      })
+                    }
+                    border="none"
+                    w="full"
+                    p="0"
+                    textAlign="center"
+                  />
+                </Td>
               </Tr>
               <Tr>
-                <Td borderRight="1px maroon solid" fontWeight="semibold" px="0">
+                <Td p="0" borderRight="1px maroon solid">
+                  <Input
+                    value={otherCharges3?.["field"]}
+                    onChange={(e) =>
+                      setOtherCharges3((prevValue) => {
+                        return { ...prevValue, field: e.target.value };
+                      })
+                    }
+                    border="none"
+                    w="full"
+                    fontWeight="semibold"
+                    p="0"
+                    textAlign="center"
+                  />
+                </Td>
+                <Td p="0" borderRight="1px maroon solid">
+                  <Input
+                    type="number"
+                    value={otherCharges3?.["value"]}
+                    onChange={(e) =>
+                      setOtherCharges3((prevValue) => {
+                        return { ...prevValue, value: e.target.value };
+                      })
+                    }
+                    border="none"
+                    w="full"
+                    p="0"
+                    textAlign="center"
+                  />
+                </Td>
+              </Tr>
+              <Tr>
+                <Td
+                  borderRight="1px maroon solid"
+                  fontWeight="semibold"
+                  px="0"
+                  textAlign="center"
+                >
                   Grand Total
                 </Td>
-                <Td borderRight="1px maroon solid">₹{getTotalAmount()}</Td>
+                <Td borderRight="1px maroon solid" textAlign="center">
+                  ₹{grandTotal}
+                </Td>
               </Tr>
             </Tbody>
           </Table>
@@ -362,6 +552,13 @@ const DownloadInvoice = () => {
   const componentRef = useRef(null);
   const [costType, setCostType] = useState("time");
   const [unitPrice, setUnitPrice] = useState(new Array(100).fill(0));
+  const [otherCharges1, setOtherCharges1] = useState({ field: "", value: "" });
+  const [otherCharges2, setOtherCharges2] = useState({ field: "", value: "" });
+  const [otherCharges3, setOtherCharges3] = useState({ field: "", value: "" });
+  const [grandTotal, setGrandTotal] = useState({
+    totalAmount: 0,
+    grandTotal: 0,
+  });
 
   const fetchFirstMaster = async () => {
     try {
@@ -469,59 +666,34 @@ const DownloadInvoice = () => {
         `${process.env.NEXT_PUBLIC_BASE_URL}transaction/invoice/new?transactionId=${transactionId}&jobCardId=${jobCardId}`,
         {
           costType,
-          unitPrice,
+          unitPrice: unitPrice.map((e) => Number(e)).filter((e) => !!e),
+          otherCharges: [otherCharges1, otherCharges2, otherCharges3],
         }
       )
       .then(() => toast("Invoice saved successfully", { type: "success" }))
       .catch((err) => toast("Failed to save invoice", { type: "error" }));
   };
 
-  const modifyUnitPriceOnInitialLoad = (
-    costType,
-    unitPrice,
-    jobCardEntries
-  ) => {
-    if (costType === "time") {
-      return unitPrice.map((price, index) => {
-        return Math.ceil((price / 60) * jobCardEntries?.[index]?.timeOfWork);
-      });
-    }
-    return unitPrice;
+  const getTotalAmount = () => {
+    let totalAmount = currentJobCard?.data?.jobCardEntries
+      ?.map((jobCardEntry, index) => {
+        const quantity =
+          costType === "size"
+            ? getTotalMeasurment(jobCardEntry)
+            : getTotalQuantity(jobCardEntry);
+        const amount = quantity * unitPrice?.[index];
+        return amount;
+      })
+      ?.reduce((a, b) => a + b, 0);
+    const extraCharges =
+      (Number(otherCharges1?.value) ?? 0) +
+      (Number(otherCharges2?.value) ?? 0) +
+      (Number(otherCharges3?.value) ?? 0);
+    return { totalAmount, grandTotal: totalAmount + extraCharges };
   };
 
-  useEffect(() => {
-    fetchFirstMaster();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (costType === "time") {
-      const prevUnitPrice = new Array(100).fill(masterData?.pricePerHour);
-      const newUnitPrices = modifyUnitPriceOnInitialLoad(
-        costType,
-        prevUnitPrice,
-        currentJobCard?.data?.jobCardEntries
-      );
-      setUnitPrice([...newUnitPrices]);
-    } else {
-      setUnitPrice(new Array(100).fill(masterData?.pricePerSqFeet));
-    }
-  }, [costType, masterData, currentJobCard]);
-
-  if (
-    isLoading ||
-    isLoadingJobCard ||
-    isCurrentJobCardLoading ||
-    isLoadingMasterData
-  )
-    return <></>;
-
-  const getTotalQuantity = () => {
-    let result = 0;
-    currentJobCard?.data?.jobCardEntries?.forEach((data) => {
-      result += Number(data.quantity);
-    });
-    return result;
+  const getTotalQuantity = (jobCardEntry) => {
+    return Number(jobCardEntry?.quantity) ?? 0;
   };
 
   const getTotalMeasurment = (data) => {
@@ -538,19 +710,30 @@ const DownloadInvoice = () => {
       ?.map((e) => Number(e.timeOfWork))
       .reduce((a, b) => a + b, 0) / 60;
 
-  const getTotalAmount = () => {
-    return currentJobCard?.data?.jobCardEntries
-      ?.map((jobCardEntry, index) => {
-        const quantity =
-          costType === "size"
-            ? getTotalMeasurment(jobCardEntry)
-            : getTotalQuantity();
-        const amount = quantity * unitPrice?.[index];
-        return amount;
-      })
-      ?.reduce((a, b) => a + b, 0)
-      .toFixed(2);
-  };
+  useEffect(() => {
+    fetchFirstMaster();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    setGrandTotal(getTotalAmount());
+  }, [
+    otherCharges1,
+    otherCharges2,
+    otherCharges3,
+    costType,
+    currentJobCard,
+    masterData,
+    getTotalAmount,
+  ]);
+
+  if (
+    isLoading ||
+    isLoadingJobCard ||
+    isCurrentJobCardLoading ||
+    isLoadingMasterData
+  )
+    return <></>;
 
   return (
     <Box p="10" px="0">
@@ -581,7 +764,10 @@ const DownloadInvoice = () => {
             <option value="size">Size</option>
           </Select>
         </Flex>
-        <Button bg="green.300" onClick={downloadPDF}>
+        <Button bg="green.300" onClick={generateInvoice}>
+          Save Changes
+        </Button>
+        <Button bg="red.300" onClick={downloadPDF}>
           Download Invoice
         </Button>
       </Flex>
@@ -596,7 +782,14 @@ const DownloadInvoice = () => {
         getTotalQuantity={getTotalQuantity}
         unitPrice={unitPrice}
         setUnitPrice={setUnitPrice}
-        getTotalAmount={getTotalAmount}
+        totalAmount={grandTotal.totalAmount}
+        grandTotal={grandTotal.grandTotal}
+        otherCharges1={otherCharges1}
+        setOtherCharges1={setOtherCharges1}
+        otherCharges2={otherCharges2}
+        setOtherCharges2={setOtherCharges2}
+        otherCharges3={otherCharges3}
+        setOtherCharges3={setOtherCharges3}
       />
     </Box>
   );
