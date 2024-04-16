@@ -299,7 +299,7 @@ const AddJobEntryModal = ({
             <Flex justifyContent="space-between" alignItems="center">
               <Box p="5" background="gray.100" borderRadius="lg">
                 <Box as="label" fontWeight="semibold">
-                  Upload Screenshot
+                  Final product image
                 </Box>
                 {image ? (
                   <Image

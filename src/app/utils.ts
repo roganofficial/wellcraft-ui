@@ -22,17 +22,7 @@ export const saveImage = async (url, filename) => {
 };
 
 export const checkIfJobCardEntryCompleted = (jobCardEntry) => {
-  if (
-    jobCardEntry.description &&
-    jobCardEntry.width &&
-    jobCardEntry.height &&
-    jobCardEntry.sizeUnit &&
-    jobCardEntry.quantity &&
-    jobCardEntry.machineNumber &&
-    jobCardEntry.timeOfWork &&
-    jobCardEntry.image &&
-    jobCardEntry.refImage
-  ) {
+  if (jobCardEntry.timeOfWork && jobCardEntry.image) {
     return true;
   }
   return false;

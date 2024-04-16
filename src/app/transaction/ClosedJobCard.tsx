@@ -169,8 +169,12 @@ const ClosedJobCard = ({ jobCard, transactionId }) => {
             </Td>
             <Td borderWidth="1px" borderColor="gray.200">
               <Text textAlign="center">
-                {getTotalAmount() - Number(invoiceData?.[0]?.paymentAmount) > 0
+                {getTotalAmount() - Number(invoiceData?.[0]?.paymentAmount) ===
+                getTotalAmount()
                   ? "Unpaid"
+                  : getTotalAmount() - Number(invoiceData?.[0]?.paymentAmount) >
+                    0
+                  ? "Partially paid"
                   : "Paid"}
               </Text>
             </Td>
