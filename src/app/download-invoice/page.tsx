@@ -68,7 +68,7 @@ const Invoice = forwardRef(
           if (invoiceData?.[0]?.unitPrice?.[index]) {
             return invoiceData?.[0]?.unitPrice?.[index];
           }
-          return Math.ceil(
+          return Math.round(
             (price / 60) *
               currentJobCard?.data?.jobCardEntries?.[index]?.timeOfWork
           );
