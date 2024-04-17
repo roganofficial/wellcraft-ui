@@ -53,19 +53,19 @@ const AddJobEntryModal = ({
       "description",
       `${typeOfWork} in ${materialThickness} mm ${materialName}`
     );
-    formData.append("height", height);
-    formData.append("width", width);
-    formData.append("sizeUnit", sizeUnit);
-    formData.append("quantity", quantity);
-    formData.append("machineNumber", machineNumber);
-    formData.append("timeOfWork", timeOfWork);
-    formData.append("remark", remark);
+    formData.append("height", height ?? 0);
+    formData.append("width", width ?? 0);
+    formData.append("sizeUnit", sizeUnit ?? "inch");
+    formData.append("quantity", quantity ?? 0);
+    formData.append("machineNumber", machineNumber ?? "");
+    formData.append("timeOfWork", timeOfWork ?? 0);
+    formData.append("remark", remark ?? "");
     formData.append("transactionId", String(transactionId));
-    if (image && entryModalData?.type === "EDIT") {
+    if (image && entryModalData?.type === "EDIT" && typeof image === "string") {
       const imageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${image}`;
       const imageData = await fetch(imageUrl);
       const blob = await imageData.blob();
-      const imageStringSplit = image.split(".");
+      const imageStringSplit = image?.split(".");
       const extension =
         imageStringSplit[imageStringSplit.length - 1].toLowerCase();
       const file = new File([blob], "image.jpg", {
@@ -78,8 +78,26 @@ const AddJobEntryModal = ({
         formData.append("image", image);
       }
     }
-    if (refImage) {
-      formData.append("refImage", refImage);
+    if (
+      refImage &&
+      entryModalData?.type === "EDIT" &&
+      typeof refImage === "string"
+    ) {
+      const imageUrl = `${process.env.NEXT_PUBLIC_BASE_URL}${refImage}`;
+      const imageData = await fetch(imageUrl);
+      const blob = await imageData.blob();
+      const imageStringSplit = refImage?.split(".");
+      const extension =
+        imageStringSplit[imageStringSplit.length - 1].toLowerCase();
+      const file = new File([blob], "image.jpg", {
+        type: `image/${extension}`,
+      });
+
+      formData.append("refImage", file);
+    } else {
+      if (refImage) {
+        formData.append("refImage", refImage);
+      }
     }
 
     axios({
