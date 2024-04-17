@@ -47,6 +47,7 @@ const Invoice = forwardRef(
       otherCharges3,
       setOtherCharges3,
       grandTotal,
+      setCostType,
     },
     ref
   ) => {
@@ -80,6 +81,7 @@ const Invoice = forwardRef(
     }, [costType, masterData, currentJobCard, invoiceData]);
 
     useEffect(() => {
+      setCostType(invoiceData?.[0]?.costType);
       if (invoiceData?.[0]?.otherCharges?.length > 0) {
         const otherCharges = invoiceData?.[0]?.otherCharges;
         if (otherCharges[0]?.field) console.log(otherCharges[0]?.field);
@@ -790,6 +792,7 @@ const DownloadInvoice = () => {
         setOtherCharges2={setOtherCharges2}
         otherCharges3={otherCharges3}
         setOtherCharges3={setOtherCharges3}
+        setCostType={setCostType}
       />
     </Box>
   );

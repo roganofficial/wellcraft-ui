@@ -30,12 +30,13 @@ const ClosedJobCard = ({ jobCard, transactionId }) => {
     );
     return result.data;
   };
+
   const {
     data: invoiceData,
     isLoading: isLoadingInvoiceData,
     refetch: refetchInvoice,
   } = useQuery({
-    queryKey: ["fetch-invoice"],
+    queryKey: [`fetch-invoice-${jobCard._id}`],
     queryFn: fetchInvoiceByJobCardId,
   });
 
