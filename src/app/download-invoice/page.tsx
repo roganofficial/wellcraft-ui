@@ -26,7 +26,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import { toast } from "react-toastify";
-import { usePDF } from "react-to-pdf";
+import { Margin, usePDF } from "react-to-pdf";
 
 const Invoice = forwardRef(
   (
@@ -125,7 +125,9 @@ const Invoice = forwardRef(
 
     console.log(numOfPages);
     const remainingHeight =
-      numOfPages * 297 * pxToA4Ratio - Number(billRef.current?.offsetHeight);
+      numOfPages * 297 * pxToA4Ratio -
+      Number(billRef.current?.offsetHeight) +
+      Margin.MEDIUM * pxToA4Ratio;
 
     return (
       <Box p="5" ref={ref} maxW="780px">
@@ -524,10 +526,10 @@ const Invoice = forwardRef(
           }).map((_, idx) => (
             <Flex
               w="780px"
-              minH="1102px"
+              minH="1120px"
               mt="5"
               justifyContent="center"
-              flexWrap="wrap"
+              flexDir="column"
               id={`image-cont-${idx}`}
               key={idx}
             >
@@ -536,8 +538,8 @@ const Invoice = forwardRef(
                 return (
                   <Flex
                     key={index}
-                    minW="365px"
-                    height="551px"
+                    flexDir="column"
+                    height="270px"
                     justifyContent="center"
                     alignItems="center"
                     border="1px solid black"
@@ -552,7 +554,10 @@ const Invoice = forwardRef(
                       }}
                       alt={`${card.image}`}
                     />
-                    <Text position="absolute" bottom="3">
+                    <Text position="absolute" bottom="2">
+                      <Box as="span" fontWeight="semibold">
+                        {index + 1}.{" "}
+                      </Box>
                       {card?.description}
                     </Text>
                   </Flex>
@@ -735,6 +740,9 @@ const DownloadInvoice = () => {
       .reduce((a, b) => a + b, 0) / 60;
 
   const { toPDF, targetRef } = usePDF({
+    page: {
+      margin: Margin.MEDIUM,
+    },
     filename: `${
       masterData?.customerInfo?.find(
         (info) => info._id === transaction?.data?.customerInfoId
