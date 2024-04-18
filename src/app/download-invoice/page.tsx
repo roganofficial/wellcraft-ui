@@ -800,7 +800,13 @@ const DownloadInvoice = () => {
           Save Changes
         </Button>
         {/* <Button bg="red.300" onClick={downloadPDF}> */}
-        <Button bg="red.300" onClick={() => toPDF()}>
+        <Button
+          bg="red.300"
+          onClick={() => {
+            generateInvoice();
+            toPDF();
+          }}
+        >
           Download Invoice
         </Button>
       </Flex>
