@@ -26,6 +26,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import { toast } from "react-toastify";
+import { usePDF } from "react-to-pdf";
 
 const Invoice = forwardRef(
   (
@@ -111,392 +112,413 @@ const Invoice = forwardRef(
       }
     }, [invoiceData]);
 
+    const billRef = useRef<HTMLDivElement>(null);
+
     if (isLoadingInvoiceData) return <></>;
+
+    const pxToA4Ratio = (Number(billRef.current?.offsetWidth) + 40) / 210;
+
+    const pageHeightInA4 =
+      (Number(billRef.current?.offsetHeight) + 20) / pxToA4Ratio;
+
+    const numOfPages = Math.ceil(pageHeightInA4 / 297);
+
+    console.log(numOfPages);
+    const remainingHeight =
+      numOfPages * 297 * pxToA4Ratio - Number(billRef.current?.offsetHeight);
 
     return (
       <Box p="5" ref={ref} maxW="780px">
-        <Flex justifyContent="space-between" alignItems="center" mt="5">
-          <Image
-            src={require("../../../public/logo.png")}
-            alt="logo"
-            width={200}
-            height={100}
-          />
-          <Text
-            fontSize="22"
-            color="maroon"
-            fontWeight="semibold"
-            letterSpacing="12px"
-          >
-            INVOICE
-          </Text>
-        </Flex>
-        <Flex justifyContent="space-between" alignItems="center" mt="5">
-          <Box>
-            <Text fontSize="16">
-              <Box as="span" fontWeight="semibold">
-                Bill To :
-              </Box>
-              <Box as="span" ml="3" textDecoration="underline" minW="48">
-                {
-                  masterData?.customerInfo?.find(
-                    (info) => info._id === transaction?.data?.customerInfoId
-                  )?.name
-                }
-              </Box>
+        <Box ref={billRef}>
+          <Flex justifyContent="space-between" alignItems="center" mt="5">
+            <Image
+              src={require("../../../public/logo.png")}
+              alt="logo"
+              width={200}
+              height={100}
+            />
+            <Text
+              fontSize="22"
+              color="maroon"
+              fontWeight="semibold"
+              letterSpacing="12px"
+            >
+              INVOICE
             </Text>
-            <Text mt="2" fontSize="16">
-              <Box as="span" fontWeight="semibold" mr="0">
-                Phone :
-              </Box>
-              <Box as="span" ml="3" textDecoration="underline" minW="48">
-                {
-                  masterData?.customerInfo?.find(
-                    (info) => info._id === transaction?.data?.customerInfoId
-                  )?.phone
-                }
-              </Box>
-            </Text>
-            <Text mt="2" fontSize="16">
-              <Box as="span" fontWeight="semibold" mr="0">
-                C/O :
-              </Box>
-              <Box as="span" ml="3" textDecoration="underline" minW="48">
-                {
-                  masterData?.contractorInfo?.find(
-                    (info) => info._id === transaction?.data?.contractorInfoId
-                  )?.name
-                }
-              </Box>
-            </Text>
-          </Box>
-          <Box>
-            <Text>
-              <Box as="span" fontWeight="semibold">
-                Invoice/ :
-              </Box>
-              <Box as="span" ml="3" textDecoration="underline" minW="48">
-                {jobCardId}
-              </Box>
-            </Text>
-            <Text mt="3">
-              <Box as="span" fontWeight="semibold">
-                Invoice Date:
-              </Box>
-              <Box as="span" ml="3" textDecoration="underline" minW="48">
-                <i>
-                  {` ${new Date().getDate()}/ ${
-                    new Date().getMonth() + 1
-                  }/ ${new Date().getFullYear()}`}
-                </i>
-              </Box>
-            </Text>
-          </Box>
-        </Flex>
-        <Flex></Flex>
-        <TableContainer mt="5">
-          <Table variant="simple" border="1px solid maroon">
-            <Thead bg="maroon">
-              <Tr>
-                <Th color="white" px="0" pl="1">
-                  Item No
-                </Th>
-                <Th color="white" px="0" textAlign="center">
-                  Description
-                </Th>
-                <Th color="white" px="0" textAlign="center">
-                  Size
-                </Th>
-                <Th color="white" px="0" textAlign="center">
-                  Qty
-                </Th>
-                {costType === "size" && (
-                  <Th color="white" px="0" textAlign="center">
-                    Qty(sq. ft)
+          </Flex>
+          <Flex justifyContent="space-between" alignItems="center" mt="5">
+            <Box>
+              <Text fontSize="16">
+                <Box as="span" fontWeight="semibold">
+                  Bill To :
+                </Box>
+                <Box as="span" ml="3" textDecoration="underline" minW="48">
+                  {
+                    masterData?.customerInfo?.find(
+                      (info) => info._id === transaction?.data?.customerInfoId
+                    )?.name
+                  }
+                </Box>
+              </Text>
+              <Text mt="2" fontSize="16">
+                <Box as="span" fontWeight="semibold" mr="0">
+                  Phone :
+                </Box>
+                <Box as="span" ml="3" textDecoration="underline" minW="48">
+                  {
+                    masterData?.customerInfo?.find(
+                      (info) => info._id === transaction?.data?.customerInfoId
+                    )?.phone
+                  }
+                </Box>
+              </Text>
+              <Text mt="2" fontSize="16">
+                <Box as="span" fontWeight="semibold" mr="0">
+                  C/O :
+                </Box>
+                <Box as="span" ml="3" textDecoration="underline" minW="48">
+                  {
+                    masterData?.contractorInfo?.find(
+                      (info) => info._id === transaction?.data?.contractorInfoId
+                    )?.name
+                  }
+                </Box>
+              </Text>
+            </Box>
+            <Box>
+              <Text>
+                <Box as="span" fontWeight="semibold">
+                  Invoice/ :
+                </Box>
+                <Box as="span" ml="3" textDecoration="underline" minW="48">
+                  {jobCardId}
+                </Box>
+              </Text>
+              <Text mt="3">
+                <Box as="span" fontWeight="semibold">
+                  Invoice Date:
+                </Box>
+                <Box as="span" ml="3" textDecoration="underline" minW="48">
+                  <i>
+                    {` ${new Date().getDate()}/ ${
+                      new Date().getMonth() + 1
+                    }/ ${new Date().getFullYear()}`}
+                  </i>
+                </Box>
+              </Text>
+            </Box>
+          </Flex>
+          <Flex></Flex>
+          <TableContainer mt="5">
+            <Table variant="simple" border="1px solid maroon">
+              <Thead bg="maroon">
+                <Tr>
+                  <Th color="white" px="0" pl="1">
+                    Item No
                   </Th>
-                )}
-                <Th color="white" px="0" textAlign="center" w="32">
-                  Unit Price
-                </Th>
-                <Th color="white" px="0" textAlign="center" w="32">
-                  Amount
-                </Th>
-              </Tr>
-            </Thead>
-            <Tbody borderLeft="1px maroon solid">
-              {currentJobCard?.data.jobCardEntries?.map(
-                (jobCardEntry, index) => {
-                  const quantity =
-                    costType === "size"
-                      ? getTotalMeasurment(jobCardEntry)
-                      : getTotalQuantity(jobCardEntry);
-                  const amount = (quantity * unitPrice?.[index]).toFixed(2);
-                  return (
-                    <Tr key={index}>
-                      <Td
-                        borderRight="1px maroon solid"
-                        px="0"
-                        textAlign="center"
-                      >
-                        {index + 1}
-                      </Td>
-                      <Td borderRight="1px maroon solid" pr="1">
-                        {jobCardEntry.description}
-                      </Td>
-                      <Td borderRight="1px maroon solid" px="1">
-                        {jobCardEntry?.width} x {jobCardEntry?.height}{" "}
-                        {jobCardEntry?.sizeUnit}
-                      </Td>
-                      <Td
-                        borderRight="1px maroon solid"
-                        px="0"
-                        textAlign="center"
-                      >
-                        {jobCardEntry?.quantity}
-                      </Td>
-                      {costType === "size" && (
+                  <Th color="white" px="0" textAlign="center">
+                    Description
+                  </Th>
+                  <Th color="white" px="0" textAlign="center">
+                    Size
+                  </Th>
+                  <Th color="white" px="0" textAlign="center">
+                    Qty
+                  </Th>
+                  {costType === "size" && (
+                    <Th color="white" px="0" textAlign="center">
+                      Qty(sq. ft)
+                    </Th>
+                  )}
+                  <Th color="white" px="0" textAlign="center" w="32">
+                    Unit Price
+                  </Th>
+                  <Th color="white" px="0" textAlign="center" w="32">
+                    Amount
+                  </Th>
+                </Tr>
+              </Thead>
+              <Tbody borderLeft="1px maroon solid">
+                {currentJobCard?.data.jobCardEntries?.map(
+                  (jobCardEntry, index) => {
+                    const quantity =
+                      costType === "size"
+                        ? getTotalMeasurment(jobCardEntry)
+                        : getTotalQuantity(jobCardEntry);
+                    const amount = (quantity * unitPrice?.[index]).toFixed(2);
+                    return (
+                      <Tr key={index}>
                         <Td
                           borderRight="1px maroon solid"
                           px="0"
                           textAlign="center"
                         >
-                          {quantity}
+                          {index + 1}
                         </Td>
-                      )}
-                      <Td
-                        borderRight="1px maroon solid"
-                        p="0"
-                        textAlign="center"
-                      >
-                        <Input
-                          type="number"
-                          value={unitPrice?.[index]}
-                          onChange={(e) =>
-                            setUnitPrice([
-                              ...unitPrice.slice(0, index),
-                              e.target.value,
-                              ...unitPrice.slice(index + 1),
-                            ])
-                          }
-                          border="none"
-                          w="20"
-                        />
-                      </Td>
-                      <Td
-                        borderRight="1px maroon solid"
-                        px="2"
-                        textAlign="center"
-                      >
-                        ₹{amount}
-                      </Td>
-                    </Tr>
-                  );
-                }
-              )}
-              {Array.from({
-                length: 12 - currentJobCard?.data.jobCardEntries?.length,
-              }).map((_, index) => (
-                <Tr key={index}>
-                  <Td borderRight="1px maroon solid"></Td>
-                  <Td borderRight="1px maroon solid"></Td>
-                  <Td borderRight="1px maroon solid"></Td>
-                  <Td borderRight="1px maroon solid"></Td>
-                  <Td borderRight="1px maroon solid"></Td>
-                  <Td borderRight="1px maroon solid"></Td>
-                  {costType === "size" && (
+                        <Td borderRight="1px maroon solid" pr="1">
+                          {jobCardEntry.description}
+                        </Td>
+                        <Td borderRight="1px maroon solid" px="1">
+                          {jobCardEntry?.width} x {jobCardEntry?.height}{" "}
+                          {jobCardEntry?.sizeUnit}
+                        </Td>
+                        <Td
+                          borderRight="1px maroon solid"
+                          px="0"
+                          textAlign="center"
+                        >
+                          {jobCardEntry?.quantity}
+                        </Td>
+                        {costType === "size" && (
+                          <Td
+                            borderRight="1px maroon solid"
+                            px="0"
+                            textAlign="center"
+                          >
+                            {quantity}
+                          </Td>
+                        )}
+                        <Td
+                          borderRight="1px maroon solid"
+                          p="0"
+                          textAlign="center"
+                        >
+                          <Input
+                            type="number"
+                            value={unitPrice?.[index]}
+                            onChange={(e) =>
+                              setUnitPrice([
+                                ...unitPrice.slice(0, index),
+                                e.target.value,
+                                ...unitPrice.slice(index + 1),
+                              ])
+                            }
+                            border="none"
+                            w="20"
+                          />
+                        </Td>
+                        <Td
+                          borderRight="1px maroon solid"
+                          px="2"
+                          textAlign="center"
+                        >
+                          ₹{amount}
+                        </Td>
+                      </Tr>
+                    );
+                  }
+                )}
+                {Array.from({
+                  length: 12 - currentJobCard?.data.jobCardEntries?.length,
+                }).map((_, index) => (
+                  <Tr key={index}>
                     <Td borderRight="1px maroon solid"></Td>
-                  )}
-                </Tr>
-              ))}
-              <Tr>
-                <Td
-                  borderBottom="1px maroon solid !important"
-                  borderRight="1px maroon solid"
-                ></Td>
-                <Td
-                  borderBottom="1px maroon solid !important"
-                  borderRight="1px maroon solid"
-                ></Td>
-                <Td
-                  borderBottom="1px maroon solid !important"
-                  borderRight="1px maroon solid"
-                ></Td>
-                <Td
-                  borderBottom="1px maroon solid !important"
-                  borderRight="1px maroon solid"
-                ></Td>
-                <Td
-                  borderBottom="1px maroon solid !important"
-                  borderRight="1px maroon solid"
-                ></Td>
-                <Td
-                  borderBottom="1px maroon solid !important"
-                  borderRight="1px maroon solid"
-                ></Td>
-                {costType === "size" && (
+                    <Td borderRight="1px maroon solid"></Td>
+                    <Td borderRight="1px maroon solid"></Td>
+                    <Td borderRight="1px maroon solid"></Td>
+                    <Td borderRight="1px maroon solid"></Td>
+                    <Td borderRight="1px maroon solid"></Td>
+                    {costType === "size" && (
+                      <Td borderRight="1px maroon solid"></Td>
+                    )}
+                  </Tr>
+                ))}
+                <Tr>
                   <Td
                     borderBottom="1px maroon solid !important"
                     borderRight="1px maroon solid"
                   ></Td>
-                )}
-              </Tr>
-              <Tr borderRight="1px maroon solid">
-                <Td
-                  borderRight="1px maroon solid"
-                  colSpan={costType === "size" ? 5 : 4}
-                  rowSpan={5}
-                >
-                  <Flex justifyContent="flex-start"></Flex>
-                </Td>
-                <Td
-                  borderRight="1px maroon solid"
-                  fontWeight="semibold"
-                  textAlign="center"
-                >
-                  Total
-                </Td>
-                <Td borderRight="1px maroon solid" textAlign="center">
-                  ₹{totalAmount}
-                </Td>
-              </Tr>
-              <Tr>
-                <Td p="0" borderRight="1px maroon solid">
-                  <Input
-                    w="full"
-                    value={otherCharges1?.["field"]}
-                    onChange={(e) =>
-                      setOtherCharges1((prevValue) => {
-                        return { ...prevValue, field: e.target.value };
-                      })
-                    }
+                  <Td
+                    borderBottom="1px maroon solid !important"
+                    borderRight="1px maroon solid"
+                  ></Td>
+                  <Td
+                    borderBottom="1px maroon solid !important"
+                    borderRight="1px maroon solid"
+                  ></Td>
+                  <Td
+                    borderBottom="1px maroon solid !important"
+                    borderRight="1px maroon solid"
+                  ></Td>
+                  <Td
+                    borderBottom="1px maroon solid !important"
+                    borderRight="1px maroon solid"
+                  ></Td>
+                  <Td
+                    borderBottom="1px maroon solid !important"
+                    borderRight="1px maroon solid"
+                  ></Td>
+                  {costType === "size" && (
+                    <Td
+                      borderBottom="1px maroon solid !important"
+                      borderRight="1px maroon solid"
+                    ></Td>
+                  )}
+                </Tr>
+                <Tr borderRight="1px maroon solid">
+                  <Td
+                    borderRight="1px maroon solid"
+                    colSpan={costType === "size" ? 5 : 4}
+                    rowSpan={5}
+                  >
+                    <Flex justifyContent="flex-start"></Flex>
+                  </Td>
+                  <Td
+                    borderRight="1px maroon solid"
+                    fontWeight="semibold"
+                    textAlign="center"
+                  >
+                    Total
+                  </Td>
+                  <Td borderRight="1px maroon solid" textAlign="center">
+                    ₹{totalAmount}
+                  </Td>
+                </Tr>
+                <Tr>
+                  <Td p="0" borderRight="1px maroon solid">
+                    <Input
+                      w="full"
+                      value={otherCharges1?.["field"]}
+                      onChange={(e) =>
+                        setOtherCharges1((prevValue) => {
+                          return { ...prevValue, field: e.target.value };
+                        })
+                      }
+                      px="0"
+                      border="none"
+                      fontWeight="semibold"
+                      textAlign="center"
+                    />
+                  </Td>
+                  <Td p="0" borderRight="1px maroon solid">
+                    <Input
+                      type="number"
+                      value={otherCharges1?.["value"]}
+                      onChange={(e) =>
+                        setOtherCharges1((prevValue) => {
+                          return { ...prevValue, value: e.target.value };
+                        })
+                      }
+                      border="none"
+                      w="full"
+                      p="0"
+                      textAlign="center"
+                    />
+                  </Td>
+                </Tr>
+                <Tr>
+                  <Td p="0" borderRight="1px maroon solid">
+                    <Input
+                      value={otherCharges2?.["field"]}
+                      onChange={(e) =>
+                        setOtherCharges2((prevValue) => {
+                          return { ...prevValue, field: e.target.value };
+                        })
+                      }
+                      border="none"
+                      w="full"
+                      fontWeight="semibold"
+                      p="0"
+                      textAlign="center"
+                    />
+                  </Td>
+                  <Td p="0" borderRight="1px maroon solid">
+                    <Input
+                      type="number"
+                      value={otherCharges2?.["value"]}
+                      onChange={(e) =>
+                        setOtherCharges2((prevValue) => {
+                          return { ...prevValue, value: e.target.value };
+                        })
+                      }
+                      border="none"
+                      w="full"
+                      p="0"
+                      textAlign="center"
+                    />
+                  </Td>
+                </Tr>
+                <Tr>
+                  <Td p="0" borderRight="1px maroon solid">
+                    <Input
+                      value={otherCharges3?.["field"]}
+                      onChange={(e) =>
+                        setOtherCharges3((prevValue) => {
+                          return { ...prevValue, field: e.target.value };
+                        })
+                      }
+                      border="none"
+                      w="full"
+                      fontWeight="semibold"
+                      p="0"
+                      textAlign="center"
+                    />
+                  </Td>
+                  <Td p="0" borderRight="1px maroon solid">
+                    <Input
+                      type="number"
+                      value={otherCharges3?.["value"]}
+                      onChange={(e) =>
+                        setOtherCharges3((prevValue) => {
+                          return { ...prevValue, value: e.target.value };
+                        })
+                      }
+                      border="none"
+                      w="full"
+                      p="0"
+                      textAlign="center"
+                    />
+                  </Td>
+                </Tr>
+                <Tr>
+                  <Td
+                    borderRight="1px maroon solid"
+                    fontWeight="semibold"
                     px="0"
-                    border="none"
-                    fontWeight="semibold"
                     textAlign="center"
-                  />
-                </Td>
-                <Td p="0" borderRight="1px maroon solid">
-                  <Input
-                    type="number"
-                    value={otherCharges1?.["value"]}
-                    onChange={(e) =>
-                      setOtherCharges1((prevValue) => {
-                        return { ...prevValue, value: e.target.value };
-                      })
-                    }
-                    border="none"
-                    w="full"
-                    p="0"
-                    textAlign="center"
-                  />
-                </Td>
-              </Tr>
-              <Tr>
-                <Td p="0" borderRight="1px maroon solid">
-                  <Input
-                    value={otherCharges2?.["field"]}
-                    onChange={(e) =>
-                      setOtherCharges2((prevValue) => {
-                        return { ...prevValue, field: e.target.value };
-                      })
-                    }
-                    border="none"
-                    w="full"
-                    fontWeight="semibold"
-                    p="0"
-                    textAlign="center"
-                  />
-                </Td>
-                <Td p="0" borderRight="1px maroon solid">
-                  <Input
-                    type="number"
-                    value={otherCharges2?.["value"]}
-                    onChange={(e) =>
-                      setOtherCharges2((prevValue) => {
-                        return { ...prevValue, value: e.target.value };
-                      })
-                    }
-                    border="none"
-                    w="full"
-                    p="0"
-                    textAlign="center"
-                  />
-                </Td>
-              </Tr>
-              <Tr>
-                <Td p="0" borderRight="1px maroon solid">
-                  <Input
-                    value={otherCharges3?.["field"]}
-                    onChange={(e) =>
-                      setOtherCharges3((prevValue) => {
-                        return { ...prevValue, field: e.target.value };
-                      })
-                    }
-                    border="none"
-                    w="full"
-                    fontWeight="semibold"
-                    p="0"
-                    textAlign="center"
-                  />
-                </Td>
-                <Td p="0" borderRight="1px maroon solid">
-                  <Input
-                    type="number"
-                    value={otherCharges3?.["value"]}
-                    onChange={(e) =>
-                      setOtherCharges3((prevValue) => {
-                        return { ...prevValue, value: e.target.value };
-                      })
-                    }
-                    border="none"
-                    w="full"
-                    p="0"
-                    textAlign="center"
-                  />
-                </Td>
-              </Tr>
-              <Tr>
-                <Td
-                  borderRight="1px maroon solid"
-                  fontWeight="semibold"
-                  px="0"
-                  textAlign="center"
-                >
-                  Grand Total
-                </Td>
-                <Td borderRight="1px maroon solid" textAlign="center">
-                  ₹{grandTotal}
-                </Td>
-              </Tr>
-            </Tbody>
-          </Table>
-          <Flex
-            mt="10"
-            w="full"
-            justifyContent="space-between"
-            alignItems="center"
-          >
-            <Box>
-              <Text textAlign="center" color="maroon">
-                <i>Thank you!</i>
+                  >
+                    Grand Total
+                  </Td>
+                  <Td borderRight="1px maroon solid" textAlign="center">
+                    ₹{grandTotal}
+                  </Td>
+                </Tr>
+              </Tbody>
+            </Table>
+            <Flex
+              mt="5"
+              w="full"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Box>
+                <Text textAlign="center" color="maroon">
+                  <i>Thank you!</i>
+                </Text>
+                <Text textAlign="center">We appreciate your business</Text>
+              </Box>
+              <Box>
+                <Box w="48" h="1px" bg="maroon" />
+                <Text textAlign="center">Authorised Sign</Text>
+              </Box>
+            </Flex>
+            <Flex mt="5" pb="2" bg="maroon" flexDir="column" w="full">
+              <Text color="white" textAlign="center">
+                ADDRESS: 193, Ward DC-2, Near Sonal Dham Temple, Gandhidham.
               </Text>
-              <Text textAlign="center">We appreciate your business</Text>
-            </Box>
-            <Box>
-              <Box w="48" h="1px" bg="maroon" />
-              <Text textAlign="center">Authorised Sign</Text>
-            </Box>
-          </Flex>
-          <Flex mt="5" pb="7" bg="maroon" flexDir="column" w="full">
-            <Text color="white" textAlign="center">
-              ADDRESS: 193, Ward DC-2, Near Sonal Dham Temple, Gandhidham.
-            </Text>
-            <Text color="white" textAlign="center">
-              Email: wellcraftindia@gmail.com Mob: +919842 41288
-            </Text>
-          </Flex>
-        </TableContainer>
-        <Box pt="5">
+              <Text color="white" textAlign="center">
+                Email: wellcraftindia@gmail.com Mob: +919842 41288
+              </Text>
+            </Flex>
+          </TableContainer>
+        </Box>
+        <Flex
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          pt="5"
+          mt={`${remainingHeight}px`}
+        >
           {Array.from({
             length: Math.ceil(currentJobCard?.data?.jobCardEntries?.length / 4),
           }).map((_, idx) => (
@@ -538,7 +560,7 @@ const Invoice = forwardRef(
               })}
             </Flex>
           ))}
-        </Box>
+        </Flex>
       </Box>
     );
   }
@@ -712,6 +734,14 @@ const DownloadInvoice = () => {
       ?.map((e) => Number(e.timeOfWork))
       .reduce((a, b) => a + b, 0) / 60;
 
+  const { toPDF, targetRef } = usePDF({
+    filename: `${
+      masterData?.customerInfo?.find(
+        (info) => info._id === transaction?.data?.customerInfoId
+      )?.name
+    }-${new Date().toDateString()}.pdf`,
+  });
+
   useEffect(() => {
     fetchFirstMaster();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -769,12 +799,13 @@ const DownloadInvoice = () => {
         <Button bg="green.300" onClick={generateInvoice}>
           Save Changes
         </Button>
-        <Button bg="red.300" onClick={downloadPDF}>
+        {/* <Button bg="red.300" onClick={downloadPDF}> */}
+        <Button bg="red.300" onClick={() => toPDF()}>
           Download Invoice
         </Button>
       </Flex>
       <Invoice
-        ref={componentRef}
+        ref={targetRef}
         jobCardId={jobCardId}
         masterData={masterData}
         transaction={transaction}
